@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>German Power Prices Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a1a;color:#e0e0e0;padding:12px}
+.hdr{text-align:center;margin-bottom:12px}
+.hdr h1{font-size:1.4em;color:#fff}
+.hdr p{font-size:.8em;color:#888;margin-top:2px}
+.ctrl{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+.ctrl label{font-size:.8em;color:#aaa}
+.ctrl input,.ctrl select{background:#1a1a2e;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;font-size:.8em}
+.ctrl button{background:#2a2a4e;color:#fff;border:1px solid #444;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:.8em}
+.ctrl button:hover{background:#3a3a6e}
+.ctrl button.active{background:#4a6cf7;border-color:#4a6cf7}
+.tabs{display:flex;gap:4px;justify-content:center;margin-bottom:10px}
+.tab{padding:6px 16px;background:#1a1a2e;border:1px solid #333;border-radius:4px 4px 0 0;cursor:pointer;font-size:.8em;color:#aaa}
+.tab.active{background:#2a2a4e;color:#fff;border-bottom-color:#2a2a4e}
+.panel{display:none;background:#1a1a2e;border:1px solid #333;border-radius:0 4px 4px 4px;padding:12px}
+.panel.active{display:block}
+.stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+.stat{background:#1a1a2e;border:1px solid #333;border-radius:4px;padding:8px 16px;text-align:center;min-width:120px}
+.stat .val{font-size:1.3em;font-weight:bold;color:#4a6cf7}
+.stat .lbl{font-size:.7em;color:#888;margin-top:2px}
+canvas{width:100%;background:#0d0d22;border-radius:4px}
+.tbl{max-height:300px;overflow-y:auto;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:.75em}
+th,td{padding:4px 8px;border:1px solid #333;text-align:right}
+th{background:#2a2a4e;position:sticky;top:0}
+td:first-child,th:first-child{text-align:left}
+.footer{text-align:center;margin-top:10px;font-size:.7em;color:#666}
+.footer a{color:#4a6cf7}
+.neg{color:#ef4444}.pos{color:#22c55e}
+.legend{display:flex;gap:12px;justify-content:center;margin:6px 0;font-size:.75em}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend i{display:inline-block;width:20px;height:3px;border-radius:2px}
+#status{font-size:.75em;color:#888;text-align:center;margin:4px 0}
+</style></head><body>
+<div class="hdr"><h1>Quarter-Hourly German Day-Ahead Power Prices</h1><p>EPEX Spot DE-LU | Source: Energy-Charts (Fraunhofer ISE) | CC BY 4.0</p></div>
+<div class="ctrl">
+<label>Highlight from: <input type="date" id="hlDate" value="2026-03-03"></label>
+<button onclick="doRefresh()">Refresh Data</button>
+<button onclick="loadRange(30)">1M</button>
+<button onclick="loadRange(90)">3M</button>
+<button onclick="loadRange(180)">6M</button>
+<button onclick="loadRange(365)">1Y</button>
+</div>
+<div id="status"></div>
+<div class="stats" id="statsRow"></div>
+<div class="tabs">
+<div class="tab active" onclick="showTab(0)">Daily Profiles</div>
+<div class="tab" onclick="showTab(1)">Time Series</div>
+<div class="tab" onclick="showTab(2)">Peak-to-Trough</div>
+<div class="tab" onclick="showTab(3)">Heatmap</div>
+</div>
+<div class="panel active" id="p0"><div class="legend" id="leg0"></div><canvas id="c0" height="400"></canvas></div>
+<div class="panel" id="p1"><canvas id="c1" height="350"></canvas></div>
+<div class="panel" id="p2"><canvas id="c2" height="350"></canvas><div class="tbl" id="tbl2"></div></div>
+<div class="panel" id="p3"><canvas id="c3" height="400"></canvas></div>
+<div class="footer">Data: <a href="https://energy-charts.info">energy-charts.info</a> (Fraunhofer ISE) | Updates daily after EPEX auction ~12:45 CET</div>
+<script>
+function aMax(a){var m=-Infinity;for(var i=0;i<a.length;i++)if(a[i]!==null&&a[i]>m)m=a[i];return m}
+function aMin(a){var m=Infinity;for(var i=0;i<a.length;i++)if(a[i]!==null&&a[i]<m)m=a[i];return m}
+function aAvg(a){var s=0,c=0;for(var i=0;i<a.length;i++)if(a[i]!==null){s+=a[i];c++}return c?s/c:0}
+function fmt(v){return v==null?"\u2014":v.toFixed(2)}
+function dateStr(ts){var d=new Date(ts*1000);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+
+var allPrices=[],startTs=0,interval=900,days={},dayKeys=[];
+var GREY="rgba(120,120,160,0.35)",RED="rgba(239,68,68,0.8)",BLUE="rgba(74,108,247,0.8)";
+
+function groupByDay(prices,start,intv){
+  var d={};for(var i=0;i<prices.length;i++){
+    if(prices[i]===null)continue;var ts=start+i*intv;
+    var dt=new Date((ts+3600)*1000);
+    var key=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+    var hr=(ts%86400)/3600;if(!d[key])d[key]=[];d[key].push({hr:hr,price:prices[i],ts:ts});
+  }return d;
+}
+
+function updateStats(){
+  var sr=document.getElementById("statsRow");var valid=allPrices.filter(function(v){return v!==null});
+  var mn=aMin(valid),mx=aMax(valid),av=aAvg(valid),cur=valid.length?valid[valid.length-1]:0;
+  while(sr.firstChild)sr.removeChild(sr.firstChild);
+  [["Latest (EUR/MWh)",cur],["Average",av],["Min",mn],["Max",mx],["Range",mx-mn]].forEach(function(it){
+    var d=document.createElement("div");d.className="stat";
+    var v=document.createElement("div");v.className="val";v.textContent=fmt(it[1]);
+    var l=document.createElement("div");l.className="lbl";l.textContent=it[0];
+    d.appendChild(v);d.appendChild(l);sr.appendChild(d);
+  });
+}
+
+var activeTab=0;
+function showTab(n){activeTab=n;var tabs=document.querySelectorAll(".tab");var panels=document.querySelectorAll(".panel");
+  for(var i=0;i<tabs.length;i++){tabs[i].className=i===n?"tab active":"tab";panels[i].className=i===n?"panel active":"panel"}draw();}
+
+function clearCanvas(id,ht){var c=document.getElementById(id);c.height=ht||400;c.width=c.parentElement.clientWidth-24;
+  var ctx=c.getContext("2d");ctx.fillStyle="#0d0d22";ctx.fillRect(0,0,c.width,c.height);return{c:c,ctx:ctx,w:c.width,h:c.height};}
+
+function drawAxes(ctx,w,h,pad,yMin,yMax,xLabels){
+  ctx.strokeStyle="#333";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();
+  ctx.fillStyle="#888";ctx.font="10px sans-serif";ctx.textAlign="right";var yS=6;
+  for(var i=0;i<=yS;i++){var v=yMin+(yMax-yMin)*i/yS;var y=h-pad.b-(i/yS)*(h-pad.t-pad.b);ctx.fillText(v.toFixed(0),pad.l-4,y+3);
+    if(i>0){ctx.strokeStyle="#1a1a2e";ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.strokeStyle="#333";}}
+  if(xLabels){ctx.textAlign="center";var pW=w-pad.l-pad.r;for(var i=0;i<xLabels.length;i++){ctx.fillText(xLabels[i],pad.l+(i/(xLabels.length-1))*pW,h-pad.b+14);}}
+  ctx.save();ctx.translate(10,h/2);ctx.rotate(-Math.PI/2);ctx.fillStyle="#888";ctx.font="10px sans-serif";ctx.textAlign="center";ctx.fillText("EUR/MWh",0,0);ctx.restore();
+}
+function drawProfiles(){var r=clearCanvas("c0",420);var ctx=r.ctx,w=r.w,h=r.h;
+  var pad={t:20,r:20,b:30,l:55};var pW=w-pad.l-pad.r,pH=h-pad.t-pad.b;
+  var hlDate=document.getElementById("hlDate").value||"2026-03-03";
+  var allV=[];dayKeys.forEach(function(k){days[k].forEach(function(p){allV.push(p.price)})});
+  if(!allV.length)return;var yMin=Math.floor(aMin(allV)/10)*10,yMax=Math.ceil(aMax(allV)/10)*10;if(yMin===yMax)yMax=yMin+10;
+  drawAxes(ctx,w,h,pad,yMin,yMax,["00:00","04:00","08:00","12:00","16:00","20:00","24:00"]);
+  function drawLine(key,color){var pts=days[key].slice().sort(function(a,b){return a.hr-b.hr});if(pts.length<2)return;
+    ctx.strokeStyle=color;ctx.lineWidth=color===GREY?1:1.5;ctx.beginPath();var first=true;
+    for(var i=0;i<pts.length;i++){var x=pad.l+(pts[i].hr/24)*pW;var y=h-pad.b-((pts[i].price-yMin)/(yMax-yMin))*pH;
+      if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y);}ctx.stroke();}
+  dayKeys.filter(function(k){return k<hlDate}).forEach(function(k){drawLine(k,GREY)});
+  dayKeys.filter(function(k){return k>=hlDate}).forEach(function(k){drawLine(k,RED)});
+  var leg=document.getElementById("leg0");while(leg.firstChild)leg.removeChild(leg.firstChild);
+  [{c:GREY,t:"Before "+hlDate},{c:RED,t:"From "+hlDate}].forEach(function(it){
+    var sp=document.createElement("span");var ic=document.createElement("i");ic.style.background=it.c;
+    sp.appendChild(ic);sp.appendChild(document.createTextNode(it.t));leg.appendChild(sp);});
+}
+
+function drawTimeSeries(){var r=clearCanvas("c1",380);var ctx=r.ctx,w=r.w,h=r.h;
+  var pad={t:20,r:20,b:30,l:55};var pW=w-pad.l-pad.r,pH=h-pad.t-pad.b;
+  var valid=allPrices.filter(function(v){return v!==null});if(!valid.length)return;
+  var yMin=Math.floor(aMin(valid)/10)*10,yMax=Math.ceil(aMax(valid)/10)*10;
+  var nL=7,xL=[];for(var i=0;i<nL;i++){var idx=Math.floor(i*(allPrices.length-1)/(nL-1));xL.push(dateStr(startTs+idx*interval))}
+  drawAxes(ctx,w,h,pad,yMin,yMax,xL);ctx.strokeStyle=BLUE;ctx.lineWidth=1;ctx.beginPath();var first=true;
+  for(var i=0;i<allPrices.length;i++){if(allPrices[i]===null)continue;var x=pad.l+(i/(allPrices.length-1))*pW;
+    var y=h-pad.b-((allPrices[i]-yMin)/(yMax-yMin))*pH;if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y);}ctx.stroke();
+  var hlDate=document.getElementById("hlDate").value;if(hlDate){
+    var hlTs=new Date(hlDate+"T00:00:00+01:00").getTime()/1000;var idx=Math.round((hlTs-startTs)/interval);
+    if(idx>0&&idx<allPrices.length){var x=pad.l+(idx/(allPrices.length-1))*pW;
+      ctx.strokeStyle="rgba(239,68,68,0.5)";ctx.lineWidth=2;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,h-pad.b);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle="#ef4444";ctx.font="10px sans-serif";ctx.textAlign="center";ctx.fillText(hlDate,x,pad.t-4);}}
+}
+function drawPeakTrough(){var r=clearCanvas("c2",380);var ctx=r.ctx,w=r.w,h=r.h;
+  var pad={t:20,r:20,b:40,l:55};var pW=w-pad.l-pad.r,pH=h-pad.t-pad.b;
+  var dS=dayKeys.map(function(k){var ps=days[k].map(function(p){return p.price});
+    return{date:k,min:aMin(ps),max:aMax(ps),avg:aAvg(ps),spread:aMax(ps)-aMin(ps)};});
+  if(!dS.length)return;var spreads=dS.map(function(s){return s.spread});
+  var yMax=Math.ceil(aMax(spreads)/10)*10;if(yMax<10)yMax=10;
+  drawAxes(ctx,w,h,pad,0,yMax,null);var bW=Math.max(2,pW/dS.length-2);
+  var hlDate=document.getElementById("hlDate").value||"2026-03-03";
+  for(var i=0;i<dS.length;i++){var s=dS[i];var x=pad.l+(i+0.5)/dS.length*pW-bW/2;
+    var bH=(s.spread/yMax)*pH;var y=h-pad.b-bH;
+    ctx.fillStyle=s.date>=hlDate?"rgba(239,68,68,0.7)":"rgba(74,108,247,0.6)";ctx.fillRect(x,y,bW,bH);
+    if(dS.length<=31||i%Math.ceil(dS.length/15)===0){ctx.save();ctx.translate(pad.l+(i+0.5)/dS.length*pW,h-pad.b+6);
+      ctx.rotate(Math.PI/4);ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";ctx.fillText(s.date.slice(5),0,0);ctx.restore();}}
+  var tbl=document.getElementById("tbl2");while(tbl.firstChild)tbl.removeChild(tbl.firstChild);
+  var table=document.createElement("table");var hdr=table.insertRow();
+  ["Date","Min","Max","Avg","Spread (Peak-Trough)"].forEach(function(t){var th=document.createElement("th");th.textContent=t;hdr.appendChild(th)});
+  dS.slice().sort(function(a,b){return b.spread-a.spread}).forEach(function(s){var row=table.insertRow();
+    [s.date,fmt(s.min),fmt(s.max),fmt(s.avg),fmt(s.spread)].forEach(function(v,ci){var td=row.insertCell();td.textContent=v;if(ci===4&&s.spread>80)td.className="neg";});});
+  tbl.appendChild(table);
+}
+
+function drawHeatmap(){var nR=dayKeys.length;var tH=Math.max(400,nR*16+60);
+  var r=clearCanvas("c3",tH);var ctx=r.ctx,w=r.w,h=r.h;
+  var pad={t:30,r:20,b:30,l:80};var pW=w-pad.l-pad.r;var rH=Math.max(10,Math.min(18,(h-pad.t-pad.b)/nR));
+  var spd=Math.round(86400/interval);var cW=pW/spd;
+  var valid=allPrices.filter(function(v){return v!==null});var pMn=aMin(valid),pMx=aMax(valid),pMd=(pMn+pMx)/2;
+  function hC(v){if(v===null)return"#1a1a2e";var r2,g,b;
+    if(v<=pMd){var t=(v-pMn)/(pMd-pMn||1);r2=Math.round(30+t*195);g=Math.round(60+t*165);b=Math.round(200-t*30)}
+    else{var t=(v-pMd)/(pMx-pMd||1);r2=Math.round(225+t*30);g=Math.round(225-t*180);b=Math.round(170-t*140)}
+    return"rgb("+r2+","+g+","+b+")";}
+  ctx.fillStyle="#888";ctx.font="10px sans-serif";ctx.textAlign="center";
+  for(var i=0;i<24;i+=4)ctx.fillText(String(i).padStart(2,"0")+":00",pad.l+(i/24)*pW+cW,pad.t-8);
+  for(var d=0;d<nR;d++){var y=pad.t+d*rH;ctx.fillStyle="#aaa";ctx.font="9px sans-serif";ctx.textAlign="right";
+    ctx.fillText(dayKeys[d],pad.l-4,y+rH/2+3);var dp=days[dayKeys[d]].slice().sort(function(a,b){return a.hr-b.hr});
+    for(var j=0;j<dp.length;j++){ctx.fillStyle=hC(dp[j].price);ctx.fillRect(pad.l+(dp[j].hr/24)*pW,y,Math.ceil(cW)+1,rH-1);}}
+  var lY=pad.t+nR*rH+8,lW=200,lX=(w-lW)/2;
+  for(var i=0;i<lW;i++){ctx.fillStyle=hC(pMn+(pMx-pMn)*i/lW);ctx.fillRect(lX+i,lY,1,10)}
+  ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="center";
+  ctx.fillText(fmt(pMn),lX,lY+22);ctx.fillText(fmt(pMx),lX+lW,lY+22);ctx.fillText("EUR/MWh",lX+lW/2,lY+22);
+}
+function draw(){if(!allPrices.length)return;updateStats();if(activeTab===0)drawProfiles();else if(activeTab===1)drawTimeSeries();else if(activeTab===2)drawPeakTrough();else if(activeTab===3)drawHeatmap()}
+function setStatus(msg){document.getElementById("status").textContent=msg}
+
+function fetchAPI(sd,ed){setStatus("Fetching data from Energy-Charts API...");
+  fetch("https://api.energy-charts.info/price?bzn=DE-LU&start="+sd+"&end="+ed)
+  .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})
+  .then(function(d){if(!d.unix_seconds||!d.price)throw new Error("Invalid response");
+    allPrices=d.price;startTs=d.unix_seconds[0];interval=d.unix_seconds[1]-d.unix_seconds[0];
+    days=groupByDay(allPrices,startTs,interval);dayKeys=Object.keys(days).sort();
+    setStatus("Loaded "+allPrices.length+" points ("+dayKeys[0]+" to "+dayKeys[dayKeys.length-1]+")");draw();
+  }).catch(function(e){setStatus("Fetch failed: "+e.message)});}
+
+function doRefresh(){var e=new Date();e.setDate(e.getDate()+1);var s=new Date();s.setDate(s.getDate()-21);
+  fetchAPI(s.toISOString().slice(0,10),e.toISOString().slice(0,10));}
+function loadRange(n){var e=new Date();e.setDate(e.getDate()+1);var s=new Date();s.setDate(s.getDate()-n);
+  fetchAPI(s.toISOString().slice(0,10),e.toISOString().slice(0,10));}
+
+document.getElementById("hlDate").addEventListener("change",function(){draw()});
+window.addEventListener("resize",function(){draw()});
+
+// Auto-load 3 weeks of data on page load
+doRefresh();
+</script></body></html>

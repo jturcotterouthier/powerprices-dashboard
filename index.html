@@ -1,0 +1,634 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>European Power Prices — PE Analytics</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0a1a;color:#e0e0e0;padding:12px;max-width:1440px;margin:0 auto}
+.hdr{text-align:center;margin-bottom:10px}
+.hdr h1{font-size:1.3em;color:#fff}
+.hdr p{font-size:.75em;color:#888;margin-top:2px}
+.ctrl{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.ctrl label{font-size:.8em;color:#aaa}
+.ctrl select{background:#1a1a2e;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;font-size:.8em}
+.ctrl button{background:#2a2a4e;color:#fff;border:1px solid #444;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:.8em}
+.ctrl button:hover{background:#3a3a6e}
+.ctrl button.active{background:#4a6cf7;border-color:#4a6cf7}
+.tabs{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.tab{padding:5px 12px;background:#1a1a2e;border:1px solid #333;border-radius:4px 4px 0 0;cursor:pointer;font-size:.75em;color:#aaa;white-space:nowrap}
+.tab.active{background:#2a2a4e;color:#fff;border-bottom-color:#2a2a4e}
+.panel{display:none;background:#1a1a2e;border:1px solid #333;border-radius:0 4px 4px 4px;padding:12px}
+.panel.active{display:block}
+canvas{width:100%;background:#0d0d22;border-radius:4px}
+#status{font-size:.72em;color:#888;text-align:center;margin:4px 0}
+.footer{text-align:center;margin-top:10px;font-size:.68em;color:#666}
+.footer a{color:#4a6cf7}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;margin-bottom:10px}
+.kpi{background:#12122a;border:1px solid #2a2a4e;border-radius:6px;padding:10px 12px;position:relative}
+.kpi .kl{font-size:.68em;color:#888;margin-bottom:2px}
+.kpi .kv{font-size:1.2em;font-weight:700;color:#fff}
+.kpi .kc{font-size:.72em;margin-top:2px}
+.kpi .kc.pos{color:#22c55e}
+.kpi .kc.neg{color:#ef4444}
+.kpi .kc.flat{color:#888}
+.spark{display:block;margin-top:4px;width:100%;height:28px}
+.cnote{font-size:.68em;color:#666;text-align:center;margin:4px 0;font-style:italic}
+.legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:6px 0;font-size:.72em}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px}
+.tbl{max-height:320px;overflow-y:auto;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:.72em}
+th,td{padding:4px 8px;border:1px solid #222;text-align:right}
+th{background:#1e1e3a;position:sticky;top:0;color:#aaa;font-weight:600}
+td:first-child,th:first-child{text-align:left}
+.pos{color:#22c55e}.neg{color:#ef4444}
+.hl-row{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:4px}
+.hl-row label{font-size:.8em;color:#aaa}
+.hl-row input[type="date"]{background:#1a1a2e;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;font-size:.8em}
+.hl-row button{background:#2a2a4e;color:#fff;border:1px solid #444;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:.75em}
+.hl-row button:hover{background:#3a3a6e}
+.slider-row{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:6px;padding:0 40px}
+.slider-row label{font-size:.72em;color:#666;white-space:nowrap}
+#hlSlider{flex:1;max-width:500px;accent-color:#4a6cf7;cursor:pointer}
+.mtbl{margin-top:10px}
+.mtbl table{font-size:.7em}
+.mtbl th{font-size:.7em;background:#1e1e3a}
+.sub-title{font-size:.8em;color:#aaa;text-align:center;margin:8px 0 4px}
+.dow-row{display:flex;gap:4px;justify-content:center;margin-top:8px}
+.dow-bar{display:flex;flex-direction:column;align-items:center;font-size:.65em;color:#888}
+.dow-bar .db{background:#4a6cf7;border-radius:2px 2px 0 0;min-width:28px}
+.dow-bar .dl{margin-top:2px}
+.dow-bar .dv{margin-top:1px;color:#aaa;font-size:.9em}
+</style></head><body>
+<div class="hdr"><h1>European Day-Ahead Power Prices</h1><p>PE Analytics Dashboard | EPEX Spot &amp; Nord Pool | Source: Energy-Charts (Fraunhofer ISE) | CC BY 4.0</p></div>
+<div class="ctrl">
+<label>Market:</label>
+<select id="mktSel" onchange="switchMarket()">
+<optgroup label="Western Europe">
+<option value="DE-LU" selected>Germany/Luxembourg (DE-LU)</option>
+<option value="FR">France (FR)</option>
+<option value="NL">Netherlands (NL)</option>
+<option value="BE">Belgium (BE)</option>
+<option value="AT">Austria (AT)</option>
+<option value="CH">Switzerland (CH)</option>
+</optgroup>
+<optgroup label="Nordics">
+<option value="DK1">Denmark West (DK1)</option>
+<option value="DK2">Denmark East (DK2)</option>
+<option value="NO1">Norway South (NO1)</option>
+<option value="NO2">Norway Central (NO2)</option>
+<option value="SE1">Sweden North (SE1)</option>
+<option value="SE2">Sweden Central (SE2)</option>
+<option value="SE3">Sweden South (SE3)</option>
+<option value="SE4">Sweden Malmö (SE4)</option>
+<option value="FI">Finland (FI)</option>
+</optgroup>
+<optgroup label="Iberian">
+<option value="ES">Spain (ES)</option>
+<option value="PT">Portugal (PT)</option>
+</optgroup>
+<optgroup label="Italy">
+<option value="IT-North">Italy North</option>
+<option value="IT-South">Italy South</option>
+</optgroup>
+<optgroup label="Central/Eastern">
+<option value="PL">Poland (PL)</option>
+<option value="CZ">Czech Republic (CZ)</option>
+<option value="HU">Hungary (HU)</option>
+<option value="SK">Slovakia (SK)</option>
+<option value="SI">Slovenia (SI)</option>
+<option value="HR">Croatia (HR)</option>
+<option value="RO">Romania (RO)</option>
+<option value="BG">Bulgaria (BG)</option>
+</optgroup>
+<optgroup label="Baltics">
+<option value="EE">Estonia (EE)</option>
+<option value="LV">Latvia (LV)</option>
+<option value="LT">Lithuania (LT)</option>
+</optgroup>
+<optgroup label="Other">
+<option value="GR">Greece (GR)</option>
+</optgroup>
+</select>
+<button onclick="loadRange(30)">1M</button>
+<button onclick="loadRange(90)">3M</button>
+<button onclick="loadRange(180)">6M</button>
+<button onclick="loadRange(365)">1Y</button>
+<button onclick="loadRange(730)">2Y</button>
+<button onclick="loadRange(1095)">3Y</button>
+<button onclick="loadRange(1825)">5Y</button>
+<button onclick="loadMaxRange()">Max</button>
+</div>
+<div id="status"></div>
+<div class="tabs">
+<div class="tab active" onclick="showTab(0)">Summary</div>
+<div class="tab" onclick="showTab(1)">BESS Economics</div>
+<div class="tab" onclick="showTab(2)">Spread Duration</div>
+<div class="tab" onclick="showTab(3)">Price Structure</div>
+<div class="tab" onclick="showTab(4)">Volatility &amp; Risk</div>
+<div class="tab" onclick="showTab(5)">Daily Profiles</div>
+<div class="tab" onclick="showTab(6)">Heatmap</div>
+</div>
+<div class="panel active" id="p0">
+<div class="kpis" id="kpiRow"></div>
+<canvas id="c0" height="220"></canvas>
+<div class="cnote">Rolling BESS revenue estimate (daily spread x 88% RTE, 1 cycle/day)</div>
+<div class="mtbl" id="monthlyTbl"></div>
+</div>
+<div class="panel" id="p1">
+<div class="cnote">Theoretical 1-cycle arbitrage: daily (max-min) spread x 88% round-trip efficiency. Actual dispatch typically captures 60-80% of theoretical spread.</div>
+<canvas id="c1" height="400"></canvas>
+<div class="sub-title">Average Revenue by Day of Week</div>
+<div class="dow-row" id="dowRow"></div>
+<div class="tbl" id="tbl1"></div>
+</div>
+<div class="panel" id="p2">
+<div class="cnote">Revenue duration curve — shows what percentage of days achieve a given spread level</div>
+<canvas id="c2" height="380"></canvas>
+<div id="spreadStats" style="text-align:center;font-size:.75em;color:#aaa;margin-top:6px"></div>
+</div>
+<div class="panel" id="p3">
+<div class="legend" id="leg3"></div>
+<canvas id="c3" height="420"></canvas>
+<div class="cnote">Solar cannibalisation index = midday (10-14h) avg / baseload (24h) avg. Values below 1.0 indicate solar-driven price depression.</div>
+</div>
+<div class="panel" id="p4">
+<canvas id="c4" height="420"></canvas>
+<div id="volStats" style="text-align:center;font-size:.75em;color:#aaa;margin-top:6px"></div>
+</div>
+<div class="panel" id="p5">
+<div class="hl-row">
+<label>Highlight from:</label>
+<input type="date" id="hlDate" value="2026-03-03">
+<button onclick="setHlOffset(1)">1D</button>
+<button onclick="setHlOffset(7)">1W</button>
+<button onclick="setHlOffset(30)">1M</button>
+<button onclick="setHlOffset(60)">2M</button>
+</div>
+<div class="slider-row">
+<label id="sliderMin"></label>
+<input type="range" id="hlSlider" min="0" max="100" value="50" oninput="onSliderChange()">
+<label id="sliderMax"></label>
+</div>
+<div class="legend" id="leg5"></div>
+<canvas id="c5" height="400"></canvas>
+</div>
+<div class="panel" id="p6">
+<canvas id="c6" height="400"></canvas>
+</div>
+<div class="footer">Data: <a href="https://energy-charts.info">energy-charts.info</a> (Fraunhofer ISE) | Historical data available from 2011 | Updates daily after EPEX auction ~12:45 CET<br>Assumptions: BESS RTE 88%, 1 cycle/day. Solar hours: 10-14h. Peak: 08-20h.</div>
+<script>
+var allPrices=[],startTs=0,interval=900;
+var days={},dayKeys=[],activeTab=0,currentBzn="DE-LU";
+var A={};
+var RTE=0.88;
+
+function aMax(a){var m=-Infinity;for(var i=0;i<a.length;i++)if(a[i]!==null&&a[i]>m)m=a[i];return m===-Infinity?0:m}
+function aMin(a){var m=Infinity;for(var i=0;i<a.length;i++)if(a[i]!==null&&a[i]<m)m=a[i];return m===Infinity?0:m}
+function aAvg(a){var s=0,c=0;for(var i=0;i<a.length;i++)if(a[i]!==null){s+=a[i];c++}return c?s/c:0}
+function aStd(a){var av=aAvg(a),ss=0,c=0;for(var i=0;i<a.length;i++)if(a[i]!==null){ss+=(a[i]-av)*(a[i]-av);c++}return c>1?Math.sqrt(ss/(c-1)):0}
+function fmt(v){return v===null||v===undefined?"N/A":v.toFixed(2)}
+function fmtPct(v){return v===null?"\u2014":(v>=0?"+":"")+v.toFixed(1)+"%"}
+function dateStr(ts){var d=new Date(ts*1000);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function groupByDay(prices,st,intv){var g={};for(var i=0;i<prices.length;i++){var t=st+i*intv;var dk=dateStr(t);if(!g[dk])g[dk]={prices:[],date:dk};g[dk].prices.push(prices[i])}return g}
+
+function sparkSVG(data,color){
+if(!data||data.length<2)return"";
+var mn=aMin(data),mx=aMax(data);
+if(mx===mn){mn-=1;mx+=1}
+var pts=[];for(var i=0;i<data.length;i++){
+pts.push(Math.round(i/(data.length-1)*100)+","+Math.round((1-(data[i]-mn)/(mx-mn))*26+1));}
+return'<svg viewBox="0 0 100 28" class="spark" preserveAspectRatio="none"><polyline points="'+pts.join(" ")+'" stroke="'+color+'" fill="none" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>';
+}
+
+function computeAnalytics(){
+var ds=[];
+for(var di=0;di<dayKeys.length;di++){
+var dk=dayKeys[di];var ps=days[dk].prices;var n=ps.length;var qph=n/24;
+var mn=aMin(ps),mx=aMax(ps),av=aAvg(ps);var spread=mx-mn;
+var ss=0,cc=0;for(var i=0;i<n;i++){if(ps[i]!==null){ss+=(ps[i]-av)*(ps[i]-av);cc++}}
+var sd=cc>1?Math.sqrt(ss/(cc-1)):0;
+var nc=0,ns=0;for(var i=0;i<n;i++){if(ps[i]!==null&&ps[i]<0){nc++;ns+=ps[i]}}
+var negH=nc/qph;var negD=nc>0?ns/nc:0;
+var peak=[],offpeak=[],solar=[];
+for(var i=0;i<n;i++){if(ps[i]===null)continue;var h=i/qph;
+if(h>=8&&h<20)peak.push(ps[i]);else offpeak.push(ps[i]);
+if(h>=10&&h<14)solar.push(ps[i]);}
+var dow=new Date(dk+"T12:00:00").getDay();
+ds.push({date:dk,min:mn,max:mx,avg:av,spread:spread,stdDev:sd,
+negHours:negH,negAvgDepth:negD,
+peakAvg:aAvg(peak),offpeakAvg:aAvg(offpeak),solarAvg:aAvg(solar),
+bessRev:spread*RTE,dow:dow});}
+A.daily=ds;
+function roll(field,w){var r=[];for(var i=0;i<ds.length;i++){
+var s=Math.max(0,i-w+1),sum=0,c=0;
+for(var j=s;j<=i;j++){sum+=ds[j][field];c++}r.push(sum/c);}return r;}
+A.rollPrice7=roll("avg",7);A.rollPrice30=roll("avg",30);
+A.rollSpread7=roll("spread",7);A.rollSpread30=roll("spread",30);
+A.rollVol7=roll("stdDev",7);
+A.rollBess7=roll("bessRev",7);A.rollBess30=roll("bessRev",30);
+A.rollNeg7=roll("negHours",7);
+A.cumBess=[];var cum=0;
+for(var i=0;i<ds.length;i++){cum+=ds[i].bessRev;A.cumBess.push(cum)}
+A.solarRatio=[];
+for(var i=0;i<ds.length;i++){var bl=ds[i].avg;A.solarRatio.push(bl!==0?ds[i].solarAvg/bl:1)}
+A.rollSolar7=[];for(var i=0;i<A.solarRatio.length;i++){
+var s=Math.max(0,i-6),sum=0,c=0;for(var j=s;j<=i;j++){sum+=A.solarRatio[j];c++}A.rollSolar7.push(sum/c)}
+A.peakRatio=[];for(var i=0;i<ds.length;i++){
+var op=ds[i].offpeakAvg;A.peakRatio.push(op!==0?ds[i].peakAvg/op:1)}
+A.monthly={};for(var i=0;i<ds.length;i++){
+var mk=ds[i].date.substring(0,7);if(!A.monthly[mk])A.monthly[mk]=[];A.monthly[mk].push(ds[i])}
+}
+
+function kpiVal(arr,field,w){var n=arr.length;if(n<w)w=n;var sum=0;for(var i=n-w;i<n;i++)sum+=arr[i][field];return sum/w}
+function kpiChange(arr,field,w){var n=arr.length;if(n<w*2)return null;
+var recent=0,prior=0;for(var i=n-w;i<n;i++)recent+=arr[i][field];
+for(var i=n-w*2;i<n-w;i++)prior+=arr[i][field];
+recent/=w;prior/=w;if(Math.abs(prior)<0.01)return null;return(recent-prior)/Math.abs(prior)*100}
+
+function clearCanvas(id,h){var c=document.getElementById(id);var r=c.getBoundingClientRect();
+c.width=r.width*2;c.height=(h||r.height)*2;var ctx=c.getContext("2d");ctx.scale(2,2);
+ctx.clearRect(0,0,r.width,h||r.height);return{ctx:ctx,w:r.width,h:h||r.height}}
+
+function drawAxes(ctx,w,h,pad,yMin,yMax,xLabels,rightLabel){
+ctx.strokeStyle="#333";ctx.lineWidth=0.5;
+ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();
+ctx.fillStyle="#888";ctx.font="9px sans-serif";var steps=5;
+for(var i=0;i<=steps;i++){var y=pad.t+i*(h-pad.t-pad.b)/steps;var val=yMax-(yMax-yMin)*i/steps;
+ctx.textAlign="right";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+if(xLabels){ctx.textAlign="center";for(var i=0;i<xLabels.length;i++)ctx.fillText(xLabels[i][0],xLabels[i][1],h-pad.b+12)}
+if(rightLabel){ctx.fillStyle="#666";ctx.textAlign="left";ctx.fillText(rightLabel,pad.l+4,pad.t-4)}}
+
+function yPos(val,yMin,yMax,h,pad){return pad.t+(1-(val-yMin)/(yMax-yMin))*(h-pad.t-pad.b)}
+
+function xDayLabels(pad,pW,h,dayArr,ctx){
+var step=Math.max(1,Math.ceil(dayArr.length/12));
+for(var i=0;i<dayArr.length;i+=step){var x=pad.l+(i+0.5)/dayArr.length*pW;
+ctx.save();ctx.translate(x,h-pad.b+8);ctx.rotate(-0.5);
+ctx.fillStyle="#888";ctx.font="8px sans-serif";ctx.textAlign="left";
+ctx.fillText(dayArr[i].substring(5),0,0);ctx.restore()}}
+
+/* ===== TAB 0: SUMMARY ===== */
+function drawSummary(){
+if(!A.daily||!A.daily.length)return;
+var ds=A.daily,n=ds.length;
+var kr=document.getElementById("kpiRow");kr.innerHTML="";
+var items=[
+{label:"Avg Price (7d)",val:"\u20AC"+fmt(kpiVal(ds,"avg",7))+"/MWh",chg:kpiChange(ds,"avg",7),spark:A.rollPrice7,color:"#4a6cf7"},
+{label:"Avg Spread (7d)",val:"\u20AC"+fmt(kpiVal(ds,"spread",7)),chg:kpiChange(ds,"spread",7),spark:A.rollSpread7,color:"#f97316"},
+{label:"BESS Revenue (7d)",val:"\u20AC"+fmt(kpiVal(ds,"bessRev",7))+"/MW/d",chg:kpiChange(ds,"bessRev",7),spark:A.rollBess7,color:"#22c55e"},
+{label:"Cum. BESS Revenue",val:"\u20AC"+Math.round(A.cumBess[n-1])+"/MW",chg:null,spark:A.cumBess,color:"#06b6d4"},
+{label:"Neg Hours/Day (7d)",val:fmt(kpiVal(ds,"negHours",7))+"h",chg:kpiChange(ds,"negHours",7),spark:A.rollNeg7,color:"#a855f7"},
+{label:"Volatility \u03C3 (7d)",val:"\u20AC"+fmt(kpiVal(ds,"stdDev",7)),chg:kpiChange(ds,"stdDev",7),spark:A.rollVol7,color:"#eab308"},
+{label:"Solar Cannib Index",val:fmt(A.rollSolar7[n-1]),chg:n>=14?(A.rollSolar7[n-1]-A.rollSolar7[n-8])/Math.abs(A.rollSolar7[n-8]+0.001)*100:null,spark:A.rollSolar7,color:"#f472b6"},
+{label:"Peak/Off-Peak Ratio",val:fmt(A.peakRatio[n-1]),chg:null,spark:A.peakRatio,color:"#818cf8"}
+];
+for(var i=0;i<items.length;i++){var it=items[i];var d=document.createElement("div");d.className="kpi";
+var chgClass=it.chg===null?"flat":it.chg>=0?"pos":"neg";
+var chgText=it.chg===null?"":"<div class=\"kc "+chgClass+"\">"+fmtPct(it.chg)+" vs prior 7d</div>";
+d.innerHTML="<div class=\"kl\">"+it.label+"</div><div class=\"kv\">"+it.val+"</div>"+chgText+sparkSVG(it.spark,it.color);
+kr.appendChild(d)}
+
+var r=clearCanvas("c0",220);var ctx=r.ctx,w=r.w,h=r.h;
+var pad={t:20,r:20,b:35,l:50};var pW=w-pad.l-pad.r;
+var vals7=A.rollBess7,vals30=A.rollBess30;
+var yMax=Math.max(aMax(vals7),aMax(vals30))*1.1;if(yMax<10)yMax=10;
+drawAxes(ctx,w,h,pad,0,yMax,null,"\u20AC/MW/day");
+xDayLabels(pad,pW,h,dayKeys,ctx);
+ctx.fillStyle="rgba(74,108,247,0.1)";ctx.beginPath();ctx.moveTo(pad.l,h-pad.b);
+for(var i=0;i<vals30.length;i++){var x=pad.l+(i+0.5)/vals30.length*pW;ctx.lineTo(x,yPos(vals30[i],0,yMax,h,pad))}
+ctx.lineTo(pad.l+(vals30.length-0.5)/vals30.length*pW,h-pad.b);ctx.closePath();ctx.fill();
+function drawLine(arr,color,width){ctx.strokeStyle=color;ctx.lineWidth=width||1.5;ctx.beginPath();
+for(var i=0;i<arr.length;i++){var x=pad.l+(i+0.5)/arr.length*pW;var y=yPos(arr[i],0,yMax,h,pad);
+if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
+drawLine(vals30,"rgba(255,255,255,0.5)",1);drawLine(vals7,"#22c55e",1.5);
+ctx.fillStyle="#888";ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.fillText("7d MA",w-pad.r-2,pad.t+12);ctx.fillStyle="#22c55e";ctx.fillText("\u25CF",w-pad.r-36,pad.t+12);
+ctx.fillStyle="#888";ctx.fillText("30d MA",w-pad.r-2,pad.t+22);ctx.fillStyle="rgba(255,255,255,0.5)";ctx.fillText("\u25CF",w-pad.r-42,pad.t+22);
+buildMonthlyTable()}
+
+function buildMonthlyTable(){
+var mt=document.getElementById("monthlyTbl");mt.innerHTML="";
+var mks=Object.keys(A.monthly).sort();if(!mks.length)return;
+var tbl=document.createElement("table");var hdr=tbl.insertRow();
+["Month","Avg Price","Avg Spread","BESS Rev/day","Neg Hrs/day","\u03C3 Volatility","Solar Index","Peak/OffPk"].forEach(function(t){
+var th=document.createElement("th");th.textContent=t;hdr.appendChild(th)});
+for(var mi=0;mi<mks.length;mi++){var mk=mks[mi];var mg=A.monthly[mk];var row=tbl.insertRow();
+row.insertCell().textContent=mk;
+row.insertCell().textContent="\u20AC"+fmt(aAvg(mg.map(function(d){return d.avg})));
+row.insertCell().textContent="\u20AC"+fmt(aAvg(mg.map(function(d){return d.spread})));
+row.insertCell().textContent="\u20AC"+fmt(aAvg(mg.map(function(d){return d.bessRev})));
+row.insertCell().textContent=fmt(aAvg(mg.map(function(d){return d.negHours})));
+row.insertCell().textContent="\u20AC"+fmt(aAvg(mg.map(function(d){return d.stdDev})));
+var si=aAvg(mg.map(function(d){return d.avg!==0?d.solarAvg/d.avg:1}));
+var sc=row.insertCell();sc.textContent=fmt(si);if(si<0.85)sc.className="neg";
+var pr=aAvg(mg.map(function(d){return d.offpeakAvg!==0?d.peakAvg/d.offpeakAvg:1}));
+row.insertCell().textContent=fmt(pr)}
+mt.appendChild(tbl)}
+
+/* ===== TAB 1: BESS ECONOMICS ===== */
+function drawBessEcon(){
+if(!A.daily||!A.daily.length)return;
+var ds=A.daily,n=ds.length;var r=clearCanvas("c1",400);var ctx=r.ctx,w=r.w,h=r.h;
+var topH=h*0.55;var pad={t:20,r:55,b:5,l:50};var pW=w-pad.l-pad.r;
+var revs=ds.map(function(d){return d.bessRev});
+var yMax=aMax(revs)*1.15;if(yMax<10)yMax=10;var bW=Math.max(2,pW/n-1);
+ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillText("Daily BESS Revenue (\u20AC/MW/day)",pad.l,pad.t-4);
+for(var i=0;i<=4;i++){var y=pad.t+i*(topH-pad.t-pad.b)/4;var val=yMax-(yMax)*i/4;
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+var avgRev=aAvg(revs);
+for(var i=0;i<n;i++){var x=pad.l+(i+0.5)/n*pW-bW/2;var bH=(revs[i]/yMax)*(topH-pad.t-pad.b);var y=topH-pad.b-bH;
+if(revs[i]>avgRev*2.5)ctx.fillStyle="#ef4444";
+else if(revs[i]>avgRev*1.5)ctx.fillStyle="rgba(239,68,68,0.6)";
+else ctx.fillStyle="rgba(74,108,247,0.55)";ctx.fillRect(x,y,bW,bH)}
+function drawMAL(arr,color,lw){ctx.strokeStyle=color;ctx.lineWidth=lw||1.5;ctx.beginPath();
+for(var i=0;i<arr.length;i++){var x=pad.l+(i+0.5)/arr.length*pW;
+var y=pad.t+(1-(arr[i]/yMax))*(topH-pad.t-pad.b);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
+drawMAL(A.rollBess30,"rgba(255,255,255,0.6)",1);drawMAL(A.rollBess7,"#eab308",1.5);
+ctx.fillStyle="#eab308";ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.fillText("\u25CF 7d MA",w-pad.r,pad.t+8);
+ctx.fillStyle="rgba(255,255,255,0.6)";ctx.fillText("\u25CF 30d MA",w-pad.r,pad.t+18);
+ctx.fillStyle="#ef4444";ctx.fillText("\u25CF >2.5x avg",w-pad.r,pad.t+28);
+xDayLabels({t:pad.t,r:pad.r,b:5,l:pad.l},pW,topH+18,dayKeys,ctx);
+
+var botY=topH+30;var botH=h-botY-10;
+ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillText("Cumulative BESS Revenue (\u20AC/MW)",pad.l,botY-4);
+var cumMax=aMax(A.cumBess)*1.1;if(cumMax<10)cumMax=10;
+for(var i=0;i<=3;i++){var y=botY+i*botH/3;var val=cumMax-(cumMax)*i/3;
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+ctx.fillStyle="rgba(6,182,212,0.08)";ctx.beginPath();ctx.moveTo(pad.l,botY+botH);
+for(var i=0;i<A.cumBess.length;i++){var x=pad.l+(i+0.5)/A.cumBess.length*pW;
+var y=botY+(1-(A.cumBess[i]/cumMax))*botH;ctx.lineTo(x,y)}
+ctx.lineTo(pad.l+(A.cumBess.length-0.5)/A.cumBess.length*pW,botY+botH);ctx.closePath();ctx.fill();
+ctx.strokeStyle="#06b6d4";ctx.lineWidth=2;ctx.beginPath();
+for(var i=0;i<A.cumBess.length;i++){var x=pad.l+(i+0.5)/A.cumBess.length*pW;
+var y=botY+(1-(A.cumBess[i]/cumMax))*botH;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+
+var dowRow=document.getElementById("dowRow");dowRow.innerHTML="";
+var dowNames=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var dowData=[0,0,0,0,0,0,0];var dowCnt=[0,0,0,0,0,0,0];
+for(var i=0;i<ds.length;i++){dowData[ds[i].dow]+=ds[i].bessRev;dowCnt[ds[i].dow]++}
+var dowAvg=[];for(var i=0;i<7;i++)dowAvg.push(dowCnt[i]?dowData[i]/dowCnt[i]:0);
+var dowMax=aMax(dowAvg);if(dowMax<1)dowMax=1;
+for(var i=0;i<7;i++){var d=document.createElement("div");d.className="dow-bar";
+var barH=Math.round(dowAvg[i]/dowMax*60);
+d.innerHTML='<div class="dv">\u20AC'+Math.round(dowAvg[i])+'</div><div class="db" style="height:'+barH+'px;background:'+(i===0||i===6?"#666":"#4a6cf7")+'"></div><div class="dl">'+dowNames[i]+'</div>';
+dowRow.appendChild(d)}
+
+var tbl=document.getElementById("tbl1");tbl.innerHTML="";var table=document.createElement("table");
+var hdr=table.insertRow();["Date","Spread","BESS Rev","Min","Max","Avg","Neg Hours"].forEach(function(t){
+var th=document.createElement("th");th.textContent=t;hdr.appendChild(th)});
+ds.slice().sort(function(a,b){return b.bessRev-a.bessRev}).forEach(function(d){
+var row=table.insertRow();row.insertCell().textContent=d.date;
+row.insertCell().textContent="\u20AC"+fmt(d.spread);
+var rc=row.insertCell();rc.textContent="\u20AC"+fmt(d.bessRev);if(d.bessRev>avgRev*2)rc.className="pos";
+row.insertCell().textContent="\u20AC"+fmt(d.min);row.insertCell().textContent="\u20AC"+fmt(d.max);
+row.insertCell().textContent="\u20AC"+fmt(d.avg);
+var nc=row.insertCell();nc.textContent=fmt(d.negHours);if(d.negHours>2)nc.className="pos"});
+tbl.appendChild(table)}
+
+/* ===== TAB 2: SPREAD DURATION ===== */
+function drawSpreadDuration(){
+if(!A.daily||!A.daily.length)return;
+var spreads=A.daily.map(function(d){return d.spread}).slice().sort(function(a,b){return b-a});
+var n=spreads.length;var r=clearCanvas("c2",380);var ctx=r.ctx,w=r.w,h=r.h;
+var pad={t:25,r:30,b:45,l:55};var pW=w-pad.l-pad.r;var pH=h-pad.t-pad.b;
+var yMax=spreads[0]*1.1;if(yMax<50)yMax=50;
+ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillText("Spread Duration Curve (\u20AC/MWh)",pad.l,pad.t-8);
+for(var i=0;i<=5;i++){var y=pad.t+i*pH/5;var val=yMax-(yMax)*i/5;
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+for(var i=0;i<=10;i++){var pct=i*10;var x=pad.l+pct/100*pW;
+ctx.fillStyle="#888";ctx.textAlign="center";ctx.font="9px sans-serif";ctx.fillText(pct+"%",x,h-pad.b+14)}
+ctx.fillStyle="#666";ctx.textAlign="center";ctx.font="8px sans-serif";
+ctx.fillText("% of days with spread \u2265 value",pad.l+pW/2,h-pad.b+28);
+var thresholds=[50,100,200,300];
+var thColors=["rgba(34,197,94,0.3)","rgba(234,179,8,0.3)","rgba(249,115,22,0.3)","rgba(239,68,68,0.3)"];
+for(var ti=0;ti<thresholds.length;ti++){var tv=thresholds[ti];if(tv>=yMax)continue;
+var ty=pad.t+(1-tv/yMax)*pH;ctx.strokeStyle=thColors[ti];ctx.lineWidth=1;ctx.setLineDash([4,4]);
+ctx.beginPath();ctx.moveTo(pad.l,ty);ctx.lineTo(w-pad.r,ty);ctx.stroke();ctx.setLineDash([]);
+ctx.fillStyle=thColors[ti].replace("0.3","0.7");ctx.textAlign="left";ctx.font="8px sans-serif";
+ctx.fillText("\u20AC"+tv,w-pad.r+2,ty+3)}
+ctx.fillStyle="rgba(74,108,247,0.15)";ctx.beginPath();
+ctx.moveTo(pad.l,pad.t+(1-spreads[0]/yMax)*pH);
+for(var i=0;i<n;i++){var x=pad.l+(i/(n-1))*pW;var y=pad.t+(1-spreads[i]/yMax)*pH;ctx.lineTo(x,y)}
+ctx.lineTo(pad.l+pW,pad.t+pH);ctx.lineTo(pad.l,pad.t+pH);ctx.closePath();ctx.fill();
+ctx.strokeStyle="#4a6cf7";ctx.lineWidth=2;ctx.beginPath();
+for(var i=0;i<n;i++){var x=pad.l+(i/(n-1))*pW;var y=pad.t+(1-spreads[i]/yMax)*pH;
+if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+var medIdx=Math.floor(n/2);var medX=pad.l+(medIdx/(n-1))*pW;var medY=pad.t+(1-spreads[medIdx]/yMax)*pH;
+ctx.fillStyle="#eab308";ctx.beginPath();ctx.arc(medX,medY,4,0,Math.PI*2);ctx.fill();
+ctx.font="bold 9px sans-serif";ctx.textAlign="left";ctx.fillText("P50: \u20AC"+Math.round(spreads[medIdx]),medX+6,medY-4);
+var p90Idx=Math.floor(n*0.9);if(p90Idx<n){
+var p90X=pad.l+(p90Idx/(n-1))*pW;var p90Y=pad.t+(1-spreads[p90Idx]/yMax)*pH;
+ctx.fillStyle="#22c55e";ctx.beginPath();ctx.arc(p90X,p90Y,4,0,Math.PI*2);ctx.fill();
+ctx.fillText("P90: \u20AC"+Math.round(spreads[p90Idx]),p90X+6,p90Y+10)}
+var meanS=aAvg(spreads);var meanY=pad.t+(1-meanS/yMax)*pH;
+ctx.strokeStyle="rgba(239,68,68,0.6)";ctx.lineWidth=1;ctx.setLineDash([6,3]);
+ctx.beginPath();ctx.moveTo(pad.l,meanY);ctx.lineTo(w-pad.r,meanY);ctx.stroke();ctx.setLineDash([]);
+ctx.fillStyle="#ef4444";ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.fillText("Mean: \u20AC"+Math.round(meanS),pad.l+pW-4,meanY-4);
+var ss=document.getElementById("spreadStats");
+var pa100=0,pa200=0;for(var i=0;i<n;i++){if(spreads[i]>=100)pa100++;if(spreads[i]>=200)pa200++}
+ss.innerHTML=Math.round(pa100/n*100)+"% of days have spread \u2265 \u20AC100 | "+Math.round(pa200/n*100)+"% \u2265 \u20AC200 | Median: \u20AC"+Math.round(spreads[medIdx])+" | Mean: \u20AC"+Math.round(meanS)+" | Max: \u20AC"+Math.round(spreads[0])+" | Min: \u20AC"+Math.round(spreads[n-1])}
+
+/* ===== TAB 3: PRICE STRUCTURE ===== */
+function drawPriceStructure(){
+if(!A.daily||!A.daily.length)return;
+var ds=A.daily,n=ds.length;var r=clearCanvas("c3",420);var ctx=r.ctx,w=r.w,h=r.h;
+var topH=h*0.55;var pad={t:20,r:20,b:5,l:50};var pW=w-pad.l-pad.r;
+var dailyAvgs=ds.map(function(d){return d.avg});
+var allVals=dailyAvgs.concat(A.rollPrice7).concat(A.rollPrice30);
+var yMin=aMin(allVals)*0.95;var yMax=aMax(allVals)*1.05;if(yMin>0)yMin=0;
+ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillText("Daily Average Price & Moving Averages (\u20AC/MWh)",pad.l,pad.t-4);
+for(var i=0;i<=4;i++){var y=pad.t+i*(topH-pad.t-pad.b)/4;var val=yMax-(yMax-yMin)*i/4;
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+if(yMin<0&&yMax>0){var zY=pad.t+(1-(0-yMin)/(yMax-yMin))*(topH-pad.t-pad.b);
+ctx.strokeStyle="rgba(255,255,255,0.15)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,zY);ctx.lineTo(w-pad.r,zY);ctx.stroke()}
+for(var i=0;i<n;i++){var x=pad.l+(i+0.5)/n*pW;
+var y=pad.t+(1-(dailyAvgs[i]-yMin)/(yMax-yMin))*(topH-pad.t-pad.b);
+ctx.fillStyle="rgba(74,108,247,0.35)";ctx.beginPath();ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill()}
+function drawMAT(arr,color,lw){ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.beginPath();
+for(var i=0;i<arr.length;i++){var x=pad.l+(i+0.5)/arr.length*pW;
+var y=pad.t+(1-(arr[i]-yMin)/(yMax-yMin))*(topH-pad.t-pad.b);
+if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
+drawMAT(A.rollPrice30,"rgba(255,255,255,0.5)",1);drawMAT(A.rollPrice7,"#eab308",1.5);
+xDayLabels({t:pad.t,r:pad.r,b:5,l:pad.l},pW,topH+18,dayKeys,ctx);
+ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.fillStyle="#eab308";ctx.fillText("\u25CF 7d MA",w-pad.r,pad.t+8);
+ctx.fillStyle="rgba(255,255,255,0.5)";ctx.fillText("\u25CF 30d MA",w-pad.r,pad.t+18);
+ctx.fillStyle="rgba(74,108,247,0.6)";ctx.fillText("\u25CF Daily",w-pad.r,pad.t+28);
+
+var botY=topH+35;var botH=h-botY-30;
+var peaks=ds.map(function(d){return d.peakAvg});
+var offpeaks=ds.map(function(d){return d.offpeakAvg});
+var solars=ds.map(function(d){return d.solarAvg});
+var bAll=peaks.concat(offpeaks).concat(solars);
+var bMin=aMin(bAll)*0.9;var bMax=aMax(bAll)*1.1;if(bMin>0)bMin=0;
+ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillText("Price Structure: Peak (8-20h) vs Off-Peak vs Solar (10-14h) \u2014 7d rolling",pad.l,botY-6);
+for(var i=0;i<=3;i++){var y=botY+i*botH/3;var val=bMax-(bMax-bMin)*i/3;
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+function roll7(arr){var r=[];for(var i=0;i<arr.length;i++){
+var s=Math.max(0,i-6),sum=0,c=0;for(var j=s;j<=i;j++){sum+=arr[j];c++}r.push(sum/c)}return r}
+function drawBL(arr,color,lw){ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.beginPath();
+for(var i=0;i<arr.length;i++){var x=pad.l+(i+0.5)/arr.length*pW;
+var y=botY+(1-(arr[i]-bMin)/(bMax-bMin))*botH;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
+drawBL(roll7(peaks),"#ef4444",1.5);drawBL(roll7(offpeaks),"#4a6cf7",1.5);drawBL(roll7(solars),"#eab308",1.5);
+ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.fillStyle="#ef4444";ctx.fillText("\u25CF Peak",w-pad.r,botY+8);
+ctx.fillStyle="#4a6cf7";ctx.fillText("\u25CF Off-Peak",w-pad.r,botY+18);
+ctx.fillStyle="#eab308";ctx.fillText("\u25CF Solar",w-pad.r,botY+28);
+document.getElementById("leg3").innerHTML=""}
+
+/* ===== TAB 4: VOLATILITY & RISK ===== */
+function drawVolatility(){
+if(!A.daily||!A.daily.length)return;
+var ds=A.daily,n=ds.length;var r=clearCanvas("c4",420);var ctx=r.ctx,w=r.w,h=r.h;
+var topH=h*0.45;var pad={t:20,r:20,b:5,l:50};var pW=w-pad.l-pad.r;
+var vol7=A.rollVol7;var vMax=aMax(vol7)*1.15;if(vMax<5)vMax=5;
+ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillText("Rolling 7-Day Price Volatility (\u03C3 \u20AC/MWh)",pad.l,pad.t-4);
+for(var i=0;i<=4;i++){var y=pad.t+i*(topH-pad.t-pad.b)/4;var val=vMax-(vMax)*i/4;
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+ctx.fillStyle="rgba(249,115,22,0.1)";ctx.beginPath();ctx.moveTo(pad.l,topH-pad.b);
+for(var i=0;i<vol7.length;i++){var x=pad.l+(i+0.5)/vol7.length*pW;
+ctx.lineTo(x,pad.t+(1-vol7[i]/vMax)*(topH-pad.t-pad.b))}
+ctx.lineTo(pad.l+(vol7.length-0.5)/vol7.length*pW,topH-pad.b);ctx.closePath();ctx.fill();
+ctx.strokeStyle="#f97316";ctx.lineWidth=2;ctx.beginPath();
+for(var i=0;i<vol7.length;i++){var x=pad.l+(i+0.5)/vol7.length*pW;
+var y=pad.t+(1-vol7[i]/vMax)*(topH-pad.t-pad.b);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+var meanVol=aAvg(vol7);var volStd=aStd(vol7);
+ctx.fillStyle="rgba(239,68,68,0.8)";
+for(var i=0;i<vol7.length;i++){if(vol7[i]>meanVol+2*volStd){
+var x=pad.l+(i+0.5)/vol7.length*pW;var y=pad.t+(1-vol7[i]/vMax)*(topH-pad.t-pad.b);
+ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill()}}
+xDayLabels({t:pad.t,r:pad.r,b:5,l:pad.l},pW,topH+18,dayKeys,ctx);
+
+var botY=topH+35;var botH=h-botY-30;
+ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillText("Negative Price Hours Per Day",pad.l,botY-6);
+var negHrs=ds.map(function(d){return d.negHours});
+var nMax=Math.max(aMax(negHrs)*1.2,1);
+for(var i=0;i<=3;i++){var y=botY+i*botH/3;var val=nMax-(nMax)*i/3;
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";ctx.fillText(val.toFixed(1)+"h",pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+var bW=Math.max(2,pW/n-1);
+for(var i=0;i<n;i++){if(negHrs[i]<=0)continue;
+var x=pad.l+(i+0.5)/n*pW-bW/2;var bH=(negHrs[i]/nMax)*botH;
+ctx.fillStyle="rgba(168,85,247,0.6)";ctx.fillRect(x,botY+botH-bH,bW,bH)}
+ctx.strokeStyle="#a855f7";ctx.lineWidth=1.5;ctx.beginPath();
+for(var i=0;i<A.rollNeg7.length;i++){var x=pad.l+(i+0.5)/A.rollNeg7.length*pW;
+var y=botY+botH-(A.rollNeg7[i]/nMax)*botH;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+var totalNeg=0,daysNeg=0;for(var i=0;i<n;i++){totalNeg+=negHrs[i];if(negHrs[i]>0)daysNeg++}
+var avgND=0,ndC=0;for(var i=0;i<n;i++)if(ds[i].negAvgDepth<0){avgND+=ds[i].negAvgDepth;ndC++}
+avgND=ndC?avgND/ndC:0;
+document.getElementById("volStats").innerHTML="Total negative hours: "+fmt(totalNeg)+"h across "+daysNeg+"/"+n+" days ("+Math.round(daysNeg/n*100)+"%) | Avg depth when negative: \u20AC"+fmt(avgND)+"/MWh | Avg daily \u03C3: \u20AC"+fmt(aAvg(ds.map(function(d){return d.stdDev})))}
+
+/* ===== TAB 5: DAILY PROFILES ===== */
+function drawProfiles(){
+var r=clearCanvas("c5",400);var ctx=r.ctx,w=r.w,h=r.h;if(!dayKeys.length)return;
+var pad={t:20,r:20,b:40,l:50};var pW=w-pad.l-pad.r;
+var hlDate=document.getElementById("hlDate").value||"2026-03-03";
+document.getElementById("leg5").innerHTML='<span><i style="background:rgba(74,108,247,0.5)"></i>Before '+hlDate+'</span><span><i style="background:#ef4444"></i>From '+hlDate+'</span>';
+var allV=[];dayKeys.forEach(function(k){allV=allV.concat(days[k].prices)});
+var yMin=aMin(allV),yMax=aMax(allV);if(yMin===yMax){yMin-=10;yMax+=10}
+var xLbls=[];for(var i=0;i<=4;i++){xLbls.push([String(i*6).padStart(2,"0")+":00",pad.l+i*6/24*pW])}
+xLbls.push(["24:00",pad.l+pW]);
+drawAxes(ctx,w,h,pad,yMin,yMax,xLbls,"EUR/MWh");
+ctx.lineWidth=1;dayKeys.forEach(function(dk){
+var ps=days[dk].prices;ctx.strokeStyle=dk>=hlDate?"rgba(239,68,68,0.7)":"rgba(74,108,247,0.5)";
+ctx.beginPath();for(var i=0;i<ps.length;i++){if(ps[i]===null)continue;
+var x=pad.l+i/ps.length*pW;var y=pad.t+(1-(ps[i]-yMin)/(yMax-yMin))*(h-pad.t-pad.b);
+if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()})}
+
+/* ===== TAB 6: HEATMAP ===== */
+function drawHeatmap(){
+var r=clearCanvas("c6",400);var ctx=r.ctx,w=r.w,h=r.h;if(!dayKeys.length)return;
+var pad={t:30,r:20,b:40,l:60};var pW=w-pad.l-pad.r;var pH=h-pad.t-pad.b;
+var nR=dayKeys.length;var validP=allPrices.filter(function(p){return p!==null});
+var pMn=aMin(validP),pMx=aMax(validP);var spd=Math.round(86400/interval);
+function hC(v){var t=(v-pMn)/(pMx-pMn);if(t<0)t=0;if(t>1)t=1;
+if(t<0.5){return"rgb("+Math.round(50+t*2*150)+","+Math.round(50+t*2*150)+","+Math.round(200+t*2*55)+")"}
+else{var t2=(t-0.5)*2;return"rgb("+Math.round(200+t2*55)+","+Math.round(200-t2*150)+","+Math.round(50-t2*30)+")"}}
+ctx.fillStyle="#888";ctx.font="9px sans-serif";
+for(var i=0;i<24;i++){ctx.textAlign="center";ctx.fillText(String(i).padStart(2,"0")+":00",pad.l+i/24*pW+pW/48,pad.t-8)}
+for(var d=0;d<nR;d++){var cH=pH/nR;for(var j=0;j<24;j++){var cW=pW/24;
+var idx=Math.floor(j*spd/24);
+ctx.fillStyle=days[dayKeys[d]]&&days[dayKeys[d]].prices[idx]!==undefined?hC(days[dayKeys[d]].prices[idx]):"#222";
+ctx.fillRect(pad.l+j*cW,pad.t+d*cH,cW+1,cH+1)}}
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";
+for(var i=0;i<nR;i+=Math.max(1,Math.ceil(nR/15))){ctx.fillText(dayKeys[i],pad.l-4,pad.t+i*pH/nR+pH/nR/2+3)}
+var gW=100,gX=w-pad.r-gW,gY=pad.t;
+for(var i=0;i<gW;i++){ctx.fillStyle=hC(pMn+(pMx-pMn)*i/gW);ctx.fillRect(gX+i,gY,2,8)}
+ctx.fillStyle="#888";ctx.font="7px sans-serif";ctx.textAlign="left";ctx.fillText(Math.round(pMn),gX,gY+18);
+ctx.textAlign="right";ctx.fillText(Math.round(pMx)+" EUR/MWh",gX+gW,gY+18)}
+
+/* ===== MASTER DRAW ===== */
+function draw(){if(!allPrices.length)return;
+if(activeTab===0)drawSummary();else if(activeTab===1)drawBessEcon();
+else if(activeTab===2)drawSpreadDuration();else if(activeTab===3)drawPriceStructure();
+else if(activeTab===4)drawVolatility();else if(activeTab===5)drawProfiles();
+else if(activeTab===6)drawHeatmap()}
+
+function showTab(n){activeTab=n;var tabs=document.querySelectorAll(".tab");var panels=document.querySelectorAll(".panel");
+for(var i=0;i<tabs.length;i++){tabs[i].className=i===n?"tab active":"tab";panels[i].className=i===n?"panel active":"panel"}draw()}
+
+function setHlOffset(n){var d=new Date();d.setDate(d.getDate()-n);
+var ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+document.getElementById("hlDate").value=ds;syncSliderToDate();draw()}
+
+function updateSlider(){if(!dayKeys.length)return;var slider=document.getElementById("hlSlider");
+slider.min=0;slider.max=dayKeys.length-1;
+document.getElementById("sliderMin").textContent=dayKeys[0];
+document.getElementById("sliderMax").textContent=dayKeys[dayKeys.length-1];syncSliderToDate()}
+
+function syncSliderToDate(){if(!dayKeys.length)return;
+var hlDate=document.getElementById("hlDate").value;var slider=document.getElementById("hlSlider");
+var idx=dayKeys.indexOf(hlDate);if(idx>=0){slider.value=idx}
+else{for(var i=0;i<dayKeys.length;i++){if(dayKeys[i]>=hlDate){slider.value=i;return}}slider.value=dayKeys.length-1}}
+
+function onSliderChange(){var slider=document.getElementById("hlSlider");var idx=parseInt(slider.value);
+if(dayKeys[idx]){document.getElementById("hlDate").value=dayKeys[idx];draw()}}
+
+function setStatus(msg){document.getElementById("status").textContent=msg}
+
+function fetchAPI(sd,ed){setStatus("Fetching "+currentBzn+" data...");
+var url="https://api.energy-charts.info/price?bzn="+currentBzn+"&start="+sd+"&end="+ed;
+fetch("https://corsproxy.io/?url="+encodeURIComponent(url))
+.then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})
+.then(function(d){if(!d.unix_seconds||!d.price)throw new Error("Invalid response");
+allPrices=d.price;startTs=d.unix_seconds[0];interval=d.unix_seconds[1]-d.unix_seconds[0];
+days=groupByDay(allPrices,startTs,interval);dayKeys=Object.keys(days).sort();
+computeAnalytics();updateSlider();
+var intMins=Math.round(interval/60);var resLabel=intMins<=15?"15-min":intMins<=60?"hourly":"daily";
+setStatus("Loaded "+allPrices.length.toLocaleString()+" points ("+dayKeys[0]+" to "+dayKeys[dayKeys.length-1]+") for "+currentBzn+" | "+dayKeys.length+" days | "+resLabel+" resolution");
+draw()}).catch(function(e){setStatus("Fetch failed: "+e.message)})}
+
+var currentRange=90;
+function doRefresh(){var e=new Date();e.setDate(e.getDate()+1);
+if(currentRange===0){fetchAPI("2011-01-01",e.toISOString().slice(0,10))}
+else{var s=new Date();s.setDate(s.getDate()-currentRange);fetchAPI(s.toISOString().slice(0,10),e.toISOString().slice(0,10))}}
+
+function loadRange(n){currentRange=n;var e=new Date();e.setDate(e.getDate()+1);var s=new Date();s.setDate(s.getDate()-n);
+if(n>365){setStatus("Loading "+Math.round(n/365)+"+ years of data — this may take a moment...")}
+fetchAPI(s.toISOString().slice(0,10),e.toISOString().slice(0,10))}
+
+function loadMaxRange(){currentRange=0;setStatus("Loading all available data back to 2011 — this may take a moment...");
+var e=new Date();e.setDate(e.getDate()+1);fetchAPI("2011-01-01",e.toISOString().slice(0,10))}
+
+function switchMarket(){currentBzn=document.getElementById("mktSel").value;doRefresh()}
+
+document.getElementById("hlDate").addEventListener("change",function(){syncSliderToDate();draw()});
+window.addEventListener("resize",function(){draw()});
+loadRange(90);
+</script>
+</body></html>

@@ -132,6 +132,12 @@ td:first-child,th:first-child{text-align:left}
 <button onclick="loadRange(3650)">10Y</button>
 <button onclick="loadRange(4380)">12Y</button>
 <button onclick="loadMaxRange()">Max</button>
+<span style="color:#444;margin:0 2px">|</span>
+<label>From:</label>
+<input type="date" id="startDate">
+<label>To:</label>
+<input type="date" id="endDate">
+<button onclick="loadCustomRange()">Go</button>
 </div>
 <div id="status"></div>
 <div class="tabs">
@@ -314,12 +320,19 @@ if(rightLabel){ctx.fillStyle="#666";ctx.textAlign="left";ctx.fillText(rightLabel
 
 function yPos(val,yMin,yMax,h,pad){return pad.t+(1-(val-yMin)/(yMax-yMin))*(h-pad.t-pad.b)}
 
+var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDateLabel(dk,nDays){
+var parts=dk.split("-");var mm=parseInt(parts[1])-1;var dd=parts[2];
+if(nDays<=90)return dd+" "+MONTHS[mm];
+if(nDays<=730)return MONTHS[mm]+" '"+parts[0].substring(2);
+return MONTHS[mm]+" "+parts[0]}
+
 function xDayLabels(pad,pW,h,dayArr,ctx){
-var step=Math.max(1,Math.ceil(dayArr.length/12));
-for(var i=0;i<dayArr.length;i+=step){var x=pad.l+(i+0.5)/dayArr.length*pW;
+var nDays=dayArr.length;var step=Math.max(1,Math.ceil(nDays/12));
+for(var i=0;i<nDays;i+=step){var x=pad.l+(i+0.5)/nDays*pW;
 ctx.save();ctx.translate(x,h-pad.b+8);ctx.rotate(-0.5);
 ctx.fillStyle="#888";ctx.font="8px sans-serif";ctx.textAlign="left";
-ctx.fillText(dayArr[i].substring(5),0,0);ctx.restore()}}
+ctx.fillText(fmtDateLabel(dayArr[i],nDays),0,0);ctx.restore()}}
 
 /* ===== TAB 0: SUMMARY ===== */
 function drawSummary(){
@@ -620,7 +633,7 @@ var idx=Math.floor(j*spd/24);
 ctx.fillStyle=days[dayKeys[d]]&&days[dayKeys[d]].prices[idx]!==undefined?hC(days[dayKeys[d]].prices[idx]):"#222";
 ctx.fillRect(pad.l+j*cW,pad.t+d*cH,cW+1,cH+1)}}
 ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";
-for(var i=0;i<nR;i+=Math.max(1,Math.ceil(nR/15))){ctx.fillText(dayKeys[i],pad.l-4,pad.t+i*pH/nR+pH/nR/2+3)}
+for(var i=0;i<nR;i+=Math.max(1,Math.ceil(nR/15))){ctx.fillText(fmtDateLabel(dayKeys[i],nR),pad.l-4,pad.t+i*pH/nR+pH/nR/2+3)}
 var gW=100,gX=w-pad.r-gW,gY=pad.t;
 for(var i=0;i<gW;i++){ctx.fillStyle=hC(pMn+(pMx-pMn)*i/gW);ctx.fillRect(gX+i,gY,2,8)}
 ctx.fillStyle="#888";ctx.font="7px sans-serif";ctx.textAlign="left";ctx.fillText(Math.round(pMn),gX,gY+18);
@@ -852,16 +865,28 @@ setStatus("Loaded "+allPrices.length.toLocaleString()+" points ("+dayKeys[0]+" t
 draw()}
 
 var currentRange=90;
-function doRefresh(){var e=new Date();e.setDate(e.getDate()+1);
-if(currentRange===0){fetchAPI("2011-01-01",e.toISOString().slice(0,10))}
-else{var s=new Date();s.setDate(s.getDate()-currentRange);fetchAPI(s.toISOString().slice(0,10),e.toISOString().slice(0,10))}}
+function syncDateInputs(sd,ed){document.getElementById("startDate").value=sd;document.getElementById("endDate").value=ed}
+
+function doRefresh(){
+if(currentRange===-1){loadCustomRange();return}
+var e=new Date();e.setDate(e.getDate()+1);var ed=e.toISOString().slice(0,10);
+if(currentRange===0){syncDateInputs("2011-01-01",ed);fetchAPI("2011-01-01",ed)}
+else{var s=new Date();s.setDate(s.getDate()-currentRange);var sd=s.toISOString().slice(0,10);syncDateInputs(sd,ed);fetchAPI(sd,ed)}}
 
 function loadRange(n){currentRange=n;var e=new Date();e.setDate(e.getDate()+1);var s=new Date();s.setDate(s.getDate()-n);
+var sd=s.toISOString().slice(0,10),ed=e.toISOString().slice(0,10);
+syncDateInputs(sd,ed);
 if(n>365){setStatus("Loading "+Math.round(n/365)+"+ years of data — this may take a moment...")}
-fetchAPI(s.toISOString().slice(0,10),e.toISOString().slice(0,10))}
+fetchAPI(sd,ed)}
 
 function loadMaxRange(){currentRange=0;setStatus("Loading all available data back to 2011 — this may take a moment...");
-var e=new Date();e.setDate(e.getDate()+1);fetchAPI("2011-01-01",e.toISOString().slice(0,10))}
+var e=new Date();e.setDate(e.getDate()+1);var ed=e.toISOString().slice(0,10);
+syncDateInputs("2011-01-01",ed);fetchAPI("2011-01-01",ed)}
+
+function loadCustomRange(){var sd=document.getElementById("startDate").value;var ed=document.getElementById("endDate").value;
+if(!sd||!ed){setStatus("Please set both From and To dates");return}
+if(sd>=ed){setStatus("'From' date must be before 'To' date");return}
+currentRange=-1;fetchAPI(sd,ed)}
 
 function switchMarket(){currentBzn=document.getElementById("mktSel").value;doRefresh()}
 

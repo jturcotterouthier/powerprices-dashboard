@@ -612,10 +612,27 @@ if(dayKeys[idx]){document.getElementById("hlDate").value=dayKeys[idx];draw()}}
 
 function setStatus(msg){document.getElementById("status").textContent=msg}
 
-function fetchAPI(sd,ed){setStatus("Fetching "+currentBzn+" data...");
+function fetchWithFallback(url){
+var strategies=[
+{name:"direct",build:function(u){return u}},
+{name:"corsproxy.io",build:function(u){return"https://corsproxy.io/?url="+encodeURIComponent(u)}},
+{name:"api.allorigins.win",build:function(u){return"https://api.allorigins.win/raw?url="+encodeURIComponent(u)}}
+];
+var i=0;
+function tryNext(){
+if(i>=strategies.length)return Promise.reject(new Error("All fetch methods failed"));
+var s=strategies[i];i++;
+setStatus("Fetching "+currentBzn+" data"+(s.name!=="direct"?" via "+s.name:"")+"...");
+return fetch(s.build(url)).then(function(r){
+if(!r.ok)throw new Error("HTTP "+r.status);return r.json()
+}).catch(function(e){
+console.warn(s.name+" failed: "+e.message);return tryNext()
+})}
+return tryNext()}
+
+function fetchAPI(sd,ed){
 var url="https://api.energy-charts.info/price?bzn="+currentBzn+"&start="+sd+"&end="+ed;
-fetch("https://corsproxy.io/?url="+encodeURIComponent(url))
-.then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})
+fetchWithFallback(url)
 .then(function(d){if(!d.unix_seconds||!d.price)throw new Error("Invalid response");
 allPrices=d.price;startTs=d.unix_seconds[0];interval=d.unix_seconds[1]-d.unix_seconds[0];
 days=groupByDay(allPrices,startTs,interval);dayKeys=Object.keys(days).sort();

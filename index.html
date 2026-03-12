@@ -755,34 +755,101 @@ if(dayKeys[idx]){document.getElementById("hlDate").value=dayKeys[idx];draw()}}
 
 function setStatus(msg){document.getElementById("status").textContent=msg}
 
-function fetchWithFallback(url){
-var strategies=[
-{name:"direct",build:function(u){return u}},
-{name:"corsproxy.io",build:function(u){return"https://corsproxy.io/?url="+encodeURIComponent(u)}},
-{name:"api.allorigins.win",build:function(u){return"https://api.allorigins.win/raw?url="+encodeURIComponent(u)}}
-];
-var i=0;
-function tryNext(){
-if(i>=strategies.length)return Promise.reject(new Error("All fetch methods failed"));
-var s=strategies[i];i++;
-setStatus("Fetching "+currentBzn+" data"+(s.name!=="direct"?" via "+s.name:"")+"...");
-return fetch(s.build(url)).then(function(r){
-if(!r.ok)throw new Error("HTTP "+r.status);return r.json()
+/* === Fetch engine: race proxies, cache, chunk large ranges, abort === */
+var fetchCache={};
+var activeAbort=null;
+var preferredProxy=null;
+
+function proxyUrls(url){return[
+{name:"direct",url:url},
+{name:"corsproxy.io",url:"https://corsproxy.io/?url="+encodeURIComponent(url)},
+{name:"allorigins",url:"https://api.allorigins.win/raw?url="+encodeURIComponent(url)}
+]}
+
+function raceFetch(url,signal){
+var proxies=preferredProxy?
+[{name:preferredProxy.name,url:preferredProxy.build(url)}].concat(proxyUrls(url).filter(function(p){return p.name!==preferredProxy.name})):
+proxyUrls(url);
+return new Promise(function(resolve,reject){
+var done=false,errors=0,total=proxies.length;
+proxies.forEach(function(p){
+fetch(p.url,{signal:signal}).then(function(r){
+if(!r.ok)throw new Error("HTTP "+r.status);return r.json().then(function(data){
+if(!done){done=true;
+if(!preferredProxy)preferredProxy={name:p.name,build:p.name==="direct"?function(u){return u}:p.name==="corsproxy.io"?function(u){return"https://corsproxy.io/?url="+encodeURIComponent(u)}:function(u){return"https://api.allorigins.win/raw?url="+encodeURIComponent(u)}};
+resolve(data)}})
 }).catch(function(e){
-console.warn(s.name+" failed: "+e.message);return tryNext()
-})}
-return tryNext()}
+if(!done){errors++;if(errors>=total)reject(new Error("All "+total+" fetch methods failed"))}
+})})})}
+
+function cacheKey(bzn,sd,ed){return bzn+"|"+sd+"|"+ed}
+
+function mergeChunks(chunks){
+var allU=[],allP=[];
+chunks.sort(function(a,b){return a.unix_seconds[0]-b.unix_seconds[0]});
+var seen={};
+for(var c=0;c<chunks.length;c++){
+var ch=chunks[c];
+for(var i=0;i<ch.unix_seconds.length;i++){
+var ts=ch.unix_seconds[i];
+if(!seen[ts]){seen[ts]=1;allU.push(ts);allP.push(ch.price[i])}}}
+allU.sort(function(a,b){return a-b});
+var sortedP=[];for(var i=0;i<allU.length;i++)sortedP.push(null);
+var tsMap={};for(var i=0;i<allU.length;i++)tsMap[allU[i]]=i;
+for(var c=0;c<chunks.length;c++){
+var ch=chunks[c];
+for(var i=0;i<ch.unix_seconds.length;i++){
+var idx=tsMap[ch.unix_seconds[i]];
+if(idx!==undefined)sortedP[idx]=ch.price[i]}}
+return{unix_seconds:allU,price:sortedP}}
+
+function dateChunks(sd,ed,maxDaysPerChunk){
+var chunks=[];var s=new Date(sd+"T00:00:00Z");var e=new Date(ed+"T00:00:00Z");
+while(s<e){var ce=new Date(s);ce.setUTCDate(ce.getUTCDate()+maxDaysPerChunk);
+if(ce>e)ce=e;
+chunks.push({start:s.toISOString().slice(0,10),end:ce.toISOString().slice(0,10)});
+s=ce}
+return chunks}
 
 function fetchAPI(sd,ed){
+if(activeAbort){activeAbort.abort();activeAbort=null}
+var ac=new AbortController();activeAbort=ac;
+var ck=cacheKey(currentBzn,sd,ed);
+if(fetchCache[ck]){
+setStatus("Loading from cache...");
+processData(fetchCache[ck]);return}
+var s=new Date(sd),e=new Date(ed);
+var totalDays=Math.round((e-s)/(86400000));
+if(totalDays>400){
+var chunks=dateChunks(sd,ed,365);
+setStatus("Fetching "+currentBzn+" — "+chunks.length+" chunks in parallel...");
+var promises=chunks.map(function(ch,idx){
+var u="https://api.energy-charts.info/price?bzn="+currentBzn+"&start="+ch.start+"&end="+ch.end;
+return raceFetch(u,ac.signal).then(function(d){
+if(!d.unix_seconds||!d.price)throw new Error("Invalid chunk "+idx);
+setStatus("Fetching "+currentBzn+" — chunk "+(idx+1)+"/"+chunks.length+" done...");
+return d})});
+Promise.all(promises).then(function(results){
+if(ac.signal.aborted)return;
+var merged=mergeChunks(results);
+fetchCache[ck]=merged;processData(merged);
+}).catch(function(e){if(!ac.signal.aborted)setStatus("Fetch failed: "+e.message)})}
+else{
 var url="https://api.energy-charts.info/price?bzn="+currentBzn+"&start="+sd+"&end="+ed;
-fetchWithFallback(url)
-.then(function(d){if(!d.unix_seconds||!d.price)throw new Error("Invalid response");
-allPrices=d.price;startTs=d.unix_seconds[0];interval=d.unix_seconds[1]-d.unix_seconds[0];
+setStatus("Fetching "+currentBzn+" data...");
+raceFetch(url,ac.signal).then(function(d){
+if(ac.signal.aborted)return;
+if(!d.unix_seconds||!d.price)throw new Error("Invalid response");
+fetchCache[ck]=d;processData(d);
+}).catch(function(e){if(!ac.signal.aborted)setStatus("Fetch failed: "+e.message)})}}
+
+function processData(d){
+allPrices=d.price;startTs=d.unix_seconds[0];interval=d.unix_seconds.length>1?d.unix_seconds[1]-d.unix_seconds[0]:900;
 days=groupByDay(allPrices,startTs,interval);dayKeys=Object.keys(days).sort();
 computeAnalytics();updateSlider();
 var intMins=Math.round(interval/60);var resLabel=intMins<=15?"15-min":intMins<=60?"hourly":"daily";
 setStatus("Loaded "+allPrices.length.toLocaleString()+" points ("+dayKeys[0]+" to "+dayKeys[dayKeys.length-1]+") for "+currentBzn+" | "+dayKeys.length+" days | "+resLabel+" resolution");
-draw()}).catch(function(e){setStatus("Fetch failed: "+e.message)})}
+draw()}
 
 var currentRange=90;
 function doRefresh(){var e=new Date();e.setDate(e.getDate()+1);

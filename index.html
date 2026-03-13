@@ -224,6 +224,10 @@ td:first-child,th:first-child{text-align:left}
 <canvas id="c7b" height="260"></canvas>
 <div class="sub-title">Daily TB Spread Table</div>
 <div class="tbl" id="tbl7"></div>
+<div class="sub-title">18-Month TB Trend — TB1 &amp; TB4 Dual Axis</div>
+<canvas id="c7c" height="280"></canvas>
+<div class="sub-title">Long-Run TB Spreads — Annual Regime Bands</div>
+<canvas id="c7d" height="300"></canvas>
 <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>TB Spread Framework:</b> Trading Block spreads measure intraday price volatility from a battery storage perspective. TB1 = max−min (single best cycle). TB2 = 2nd highest − 2nd lowest (strips outliers). TB4 = sum of 4 highest − sum of 4 lowest hourly prices (4-hour storage benchmark). All values in €/MWh.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> TB1 is the theoretical maximum single-cycle revenue. TB2 provides a more conservative, repeatable estimate. TB4 captures the full-day spread opportunity for 4-hour duration assets. Compare TB1 vs TB2 to assess how much revenue depends on outlier hours — a large gap signals spike-dependent markets.</div></div>
 </div>
 <div class="footer">Data: <a href="https://energy-charts.info">energy-charts.info</a> (Fraunhofer ISE) | Historical data available from 2011 | Updates daily after EPEX auction ~12:45 CET<br>Assumptions: BESS RTE 88%, 1 cycle/day. Solar hours: 10-14h. Peak: 08-20h.</div>
@@ -738,7 +742,81 @@ row.insertCell().textContent="\u20AC"+fmt(d.max);
 row.insertCell().textContent="\u20AC"+fmt(d.min);
 var diff=d.tb1-tb1Avg7;var dc=row.insertCell();dc.textContent=(diff>=0?"+":"")+fmt(diff);
 dc.className=diff>=0?"pos":"neg"}
-tbl.appendChild(table)}
+tbl.appendChild(table);
+
+/* 18-Month TB Trend — dual axis */
+var slice18=Math.min(548,n);
+drawDualAxisTB("c7c",ds.slice(n-slice18),dayKeys.slice(n-slice18),
+A.rollTB1_7.slice(n-slice18),A.rollTB4_7.slice(n-slice18),280,false);
+
+/* Long-Run TB Spreads — with regime bands */
+drawDualAxisTB("c7d",ds,dayKeys,A.rollTB1_7,A.rollTB4_7,300,true)}
+
+function drawDualAxisTB(canvasId,ds,dKeys,tb1Data,tb4Data,canvasH,showBands){
+if(!ds||ds.length<7)return;
+var n=ds.length;
+var r=clearCanvas(canvasId,canvasH);var ctx=r.ctx,w=r.w,h=r.h;
+var pad={t:30,r:60,b:35,l:55};var pW=w-pad.l-pad.r;var pH=h-pad.t-pad.b;
+
+/* Compute Y scales independently */
+var tb1Max=aMax(tb1Data)*1.15;if(tb1Max<10)tb1Max=10;
+var tb4Max=aMax(tb4Data)*1.15;if(tb4Max<10)tb4Max=10;
+
+/* Title */
+var firstDate=dKeys[0],lastDate=dKeys[n-1];
+var rangeLabel=fmtDateLabel(firstDate,n)+" - "+fmtDateLabel(lastDate,n);
+ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillText("TB1 & TB4 -- 7-Day Rolling Average -- "+rangeLabel,pad.l,pad.t-14);
+ctx.fillStyle="#666";ctx.font="7px sans-serif";
+ctx.fillText("TB1 LEFT Y (Yellow) -- TB4 RIGHT Y (Purple)",pad.l,pad.t-4);
+
+/* Annual regime bands */
+if(showBands){
+var yearColors={"2020":"rgba(100,100,100,0.08)","2021":"rgba(6,182,212,0.10)","2022":"rgba(249,115,22,0.10)",
+"2023":"rgba(34,197,94,0.10)","2024":"rgba(168,85,247,0.10)","2025":"rgba(236,72,153,0.10)","2026":"rgba(74,108,247,0.10)"};
+var yearTextColors={"2020":"#555","2021":"#06b6d4","2022":"#f97316","2023":"#22c55e","2024":"#a855f7","2025":"#ec4899","2026":"#4a6cf7"};
+var curYear=null,bandStart=0;
+for(var i=0;i<=n;i++){
+var yr=i<n?dKeys[i].substring(0,4):null;
+if(yr!==curYear){
+if(curYear!==null){
+var x0=pad.l+bandStart/n*pW;var x1=pad.l+i/n*pW;
+ctx.fillStyle=yearColors[curYear]||"rgba(100,100,100,0.06)";
+ctx.fillRect(x0,pad.t,x1-x0,pH);
+ctx.fillStyle=yearTextColors[curYear]||"#555";ctx.font="bold 10px sans-serif";ctx.textAlign="center";
+ctx.fillText(curYear,(x0+x1)/2,pad.t+14)}
+curYear=yr;bandStart=i}}}
+
+/* Left Y axis (TB1) */
+ctx.fillStyle="#eab308";ctx.font="8px sans-serif";ctx.textAlign="right";
+for(var i=0;i<=4;i++){var y=pad.t+i*pH/4;var val=tb1Max-tb1Max*i/4;
+ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+
+/* Right Y axis (TB4) */
+ctx.fillStyle="#a855f7";ctx.textAlign="left";
+for(var i=0;i<=4;i++){var y=pad.t+i*pH/4;var val=tb4Max-tb4Max*i/4;
+ctx.fillText(Math.round(val),w-pad.r+4,y+3)}
+
+/* X axis labels */
+xDayLabels(pad,pW,h,dKeys,ctx);
+
+/* TB1 line (yellow, left axis) */
+ctx.strokeStyle="#eab308";ctx.lineWidth=2;ctx.beginPath();
+for(var i=0;i<n;i++){var x=pad.l+(i+0.5)/n*pW;
+var y=pad.t+(1-tb1Data[i]/tb1Max)*pH;
+if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+
+/* TB4 line (purple, right axis) */
+ctx.strokeStyle="#a855f7";ctx.lineWidth=2;ctx.beginPath();
+for(var i=0;i<n;i++){var x=pad.l+(i+0.5)/n*pW;
+var y=pad.t+(1-tb4Data[i]/tb4Max)*pH;
+if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+
+/* Legend */
+ctx.font="8px sans-serif";
+ctx.fillStyle="#eab308";ctx.fillText("\u25CF TB1 7d Avg (Left axis)",pad.l+4,pad.t+10);
+ctx.fillStyle="#a855f7";ctx.fillText("\u25CF TB4 7d Avg (Right axis)",pad.l+4,pad.t+20)}
 
 /* ===== MASTER DRAW ===== */
 function draw(){if(!allPrices.length)return;

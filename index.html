@@ -824,37 +824,87 @@ chunks.push({start:s.toISOString().slice(0,10),end:ce.toISOString().slice(0,10)}
 s=ce}
 return chunks}
 
-function fetchAPI(sd,ed){
-if(activeAbort){activeAbort.abort();activeAbort=null}
-var ac=new AbortController();activeAbort=ac;
-var ck=cacheKey(currentBzn,sd,ed);
-if(fetchCache[ck]){
-setStatus("Loading from cache...");
-processData(fetchCache[ck]);return}
+function sliceData(d,sd,ed){
+var sTs=new Date(sd+"T00:00:00Z").getTime()/1000;
+var eTs=new Date(ed+"T00:00:00Z").getTime()/1000+86400;
+var u=[],p=[];
+for(var i=0;i<d.unix_seconds.length;i++){
+var t=d.unix_seconds[i];
+if(t>=sTs&&t<eTs){u.push(t);p.push(d.price[i])}}
+return u.length?{unix_seconds:u,price:p}:null}
+
+function fetchFromAPI(sd,ed,ac){
 var s=new Date(sd),e=new Date(ed);
-var totalDays=Math.round((e-s)/(86400000));
+var totalDays=Math.round((e-s)/86400000);
 if(totalDays>400){
 var chunks=dateChunks(sd,ed,365);
-setStatus("Fetching "+currentBzn+" — "+chunks.length+" chunks in parallel...");
+setStatus("Fetching "+currentBzn+" — "+chunks.length+" chunks from API...");
 var promises=chunks.map(function(ch,idx){
 var u="https://api.energy-charts.info/price?bzn="+currentBzn+"&start="+ch.start+"&end="+ch.end;
 return raceFetch(u,ac.signal).then(function(d){
 if(!d.unix_seconds||!d.price)throw new Error("Invalid chunk "+idx);
 setStatus("Fetching "+currentBzn+" — chunk "+(idx+1)+"/"+chunks.length+" done...");
 return d})});
-Promise.all(promises).then(function(results){
-if(ac.signal.aborted)return;
-var merged=mergeChunks(results);
-fetchCache[ck]=merged;processData(merged);
-}).catch(function(e){if(!ac.signal.aborted)setStatus("Fetch failed: "+e.message)})}
+return Promise.all(promises).then(function(results){return mergeChunks(results)})}
 else{
 var url="https://api.energy-charts.info/price?bzn="+currentBzn+"&start="+sd+"&end="+ed;
-setStatus("Fetching "+currentBzn+" data...");
-raceFetch(url,ac.signal).then(function(d){
+setStatus("Fetching "+currentBzn+" from API...");
+return raceFetch(url,ac.signal).then(function(d){
+if(!d.unix_seconds||!d.price)throw new Error("Invalid response");return d})}}
+
+var localDataCache={};
+
+function fetchAPI(sd,ed){
+if(activeAbort){activeAbort.abort();activeAbort=null}
+var ac=new AbortController();activeAbort=ac;
+var ck=cacheKey(currentBzn,sd,ed);
+if(fetchCache[ck]){setStatus("Loading from cache...");processData(fetchCache[ck]);return}
+
+/* Try local data file first */
+var bzn=currentBzn;
+var localPath="data/"+bzn+".json";
+var localPromise=localDataCache[bzn]?Promise.resolve(localDataCache[bzn]):
+fetch(localPath).then(function(r){if(!r.ok)throw new Error("No local file");return r.json()}).then(function(d){
+if(!d.unix_seconds||!d.price)throw new Error("Invalid local data");
+localDataCache[bzn]=d;return d});
+
+localPromise.then(function(localData){
 if(ac.signal.aborted)return;
-if(!d.unix_seconds||!d.price)throw new Error("Invalid response");
-fetchCache[ck]=d;processData(d);
-}).catch(function(e){if(!ac.signal.aborted)setStatus("Fetch failed: "+e.message)})}}
+var sliced=sliceData(localData,sd,ed);
+var lastLocalTs=localData.unix_seconds[localData.unix_seconds.length-1];
+var lastLocalDate=dateStr(lastLocalTs);
+var requestedEnd=ed;
+var today=new Date().toISOString().slice(0,10);
+
+/* Check if we need fresh data beyond what's stored locally */
+if(lastLocalDate<today&&lastLocalDate<requestedEnd){
+var gapStart=lastLocalDate;
+setStatus("Local data loaded (to "+lastLocalDate+"), fetching recent from API...");
+fetchFromAPI(gapStart,requestedEnd,ac).then(function(apiData){
+if(ac.signal.aborted)return;
+var merged=sliced?mergeChunks([sliced,apiData]):apiData;
+fetchCache[ck]=merged;processData(merged);
+}).catch(function(e){
+if(ac.signal.aborted)return;
+/* API failed but we have local data — use what we have */
+if(sliced){setStatus("API unavailable, using local data (up to "+lastLocalDate+")");
+fetchCache[ck]=sliced;processData(sliced)}
+else setStatus("No data available for this range")})}
+else if(sliced){
+setStatus("Loading from local data...");
+fetchCache[ck]=sliced;processData(sliced)}
+else{
+/* Local file exists but doesn't cover this range — try API */
+fetchFromAPI(sd,ed,ac).then(function(d){
+if(ac.signal.aborted)return;fetchCache[ck]=d;processData(d);
+}).catch(function(e){if(!ac.signal.aborted)setStatus("Fetch failed: "+e.message)})}
+
+}).catch(function(){
+/* No local file — fall back to full API fetch */
+if(ac.signal.aborted)return;
+fetchFromAPI(sd,ed,ac).then(function(d){
+if(ac.signal.aborted)return;fetchCache[ck]=d;processData(d);
+}).catch(function(e){if(!ac.signal.aborted)setStatus("Fetch failed: "+e.message)})})}
 
 function processData(d){
 allPrices=d.price;startTs=d.unix_seconds[0];interval=d.unix_seconds.length>1?d.unix_seconds[1]-d.unix_seconds[0]:900;

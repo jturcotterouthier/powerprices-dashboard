@@ -70,6 +70,20 @@ td:first-child,th:first-child{text-align:left}
 .tb-toggle{display:flex;gap:4px;justify-content:center;margin-bottom:8px}
 .tb-toggle button{background:#1a1a2e;color:#aaa;border:1px solid #333;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:.72em}
 .tb-toggle button.active{background:#4a6cf7;color:#fff;border-color:#4a6cf7}
+.aibox{margin-top:12px;background:#12122a;border:1px solid #2a2a4e;border-radius:6px;padding:14px 16px;position:relative;overflow:hidden}
+.aibox::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#4a6cf7,#a855f7,#4a6cf7);background-size:200% 100%;animation:aiShimmer 3s linear infinite}
+@keyframes aiShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.ai-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.ai-hdr .ai-icon{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#4a6cf7,#a855f7);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;flex-shrink:0}
+.ai-hdr .ai-title{font-size:.78em;font-weight:600;color:#ccc;letter-spacing:.3px}
+.ai-hdr .ai-mkt{font-size:.65em;color:#666;margin-left:auto}
+.ai-items{display:flex;flex-direction:column;gap:5px}
+.ai-item{display:flex;align-items:flex-start;gap:8px;font-size:.72em;line-height:1.5;color:#bbb}
+.ai-item .ai-ind{flex-shrink:0;font-size:.85em;width:16px;text-align:center;margin-top:1px}
+.ai-bull .ai-ind{color:#22c55e}
+.ai-bear .ai-ind{color:#ef4444}
+.ai-neut .ai-ind{color:#4a6cf7}
+.ai-warn .ai-ind{color:#f97316}
 </style></head><body>
 <div class="hdr"><h1>European Day-Ahead Power Prices</h1><p>PE Analytics Dashboard | EPEX Spot &amp; Nord Pool | Source: Energy-Charts (Fraunhofer ISE) | CC BY 4.0</p></div>
 <div class="ctrl">
@@ -230,6 +244,7 @@ td:first-child,th:first-child{text-align:left}
 <canvas id="c7d" height="300"></canvas>
 <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>TB Spread Framework:</b> Trading Block spreads measure intraday price volatility from a battery storage perspective. TB1 = max−min (single best cycle). TB2 = 2nd highest − 2nd lowest (strips outliers). TB4 = sum of 4 highest − sum of 4 lowest hourly prices (4-hour storage benchmark). All values in €/MWh.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> TB1 is the theoretical maximum single-cycle revenue. TB2 provides a more conservative, repeatable estimate. TB4 captures the full-day spread opportunity for 4-hour duration assets. Compare TB1 vs TB2 to assess how much revenue depends on outlier hours — a large gap signals spike-dependent markets.</div></div>
 </div>
+<div id="aibox"></div>
 <div class="footer">Data: <a href="https://energy-charts.info">energy-charts.info</a> (Fraunhofer ISE) | Historical data available from 2011 | Updates daily after EPEX auction ~12:45 CET<br>Assumptions: BESS RTE 88%, 1 cycle/day. Solar hours: 10-14h. Peak: 08-20h.</div>
 <script>
 var allPrices=[],startTs=0,interval=900;
@@ -819,11 +834,249 @@ ctx.fillStyle="#eab308";ctx.fillText("\u25CF TB1 7d Avg (Left axis)",pad.l+4,pad
 ctx.fillStyle="#a855f7";ctx.fillText("\u25CF TB4 7d Avg (Right axis)",pad.l+4,pad.t+20)}
 
 /* ===== MASTER DRAW ===== */
+/* ===== MARKET INSIGHTS ENGINE ===== */
+function generateInsights(){
+var ds=A.daily;if(!ds||ds.length<7)return[];
+var n=ds.length;var ins=[];
+var w7=Math.min(7,n),w30=Math.min(30,n),w90=Math.min(90,n);
+/* helper: recent avg of field over w days */
+function rAvg(field,w){var s=0;for(var i=n-w;i<n;i++)s+=ds[i][field];return s/w}
+function pAvg(field,w){var e=n-w,st=Math.max(0,e-w);if(st>=e)return null;var s=0;for(var i=st;i<e;i++)s+=ds[i][field];return s/(e-st)}
+function pctChg(recent,prior){if(!prior||Math.abs(prior)<0.01)return null;return(recent-prior)/Math.abs(prior)*100}
+function arrSlice(arr,cnt){return arr.slice(Math.max(0,arr.length-cnt))}
+function trend(arr,w){var sl=arrSlice(arr,w);if(sl.length<4)return 0;var h=Math.floor(sl.length/2);
+var first=0,second=0;for(var i=0;i<h;i++)first+=sl[i];first/=h;
+for(var i=h;i<sl.length;i++)second+=sl[i];second/=(sl.length-h);
+if(Math.abs(first)<0.01)return 0;return(second-first)/Math.abs(first)*100}
+/* cross-tab metrics */
+var priceNow=rAvg("avg",w7),pricePrior=pAvg("avg",w7);
+var spreadNow=rAvg("spread",w7),spreadPrior=pAvg("spread",w7);
+var volNow=rAvg("stdDev",w7),volPrior=pAvg("stdDev",w7);
+var negNow=rAvg("negHours",w7),negPrior=pAvg("negHours",w7);
+var bessNow=rAvg("bessRev",w7),bessPrior=pAvg("bessRev",w7);
+var solarNow=A.rollSolar7.length?A.rollSolar7[A.rollSolar7.length-1]:1;
+var solarTrend=trend(A.rollSolar7,w30);
+var pricePct=pctChg(priceNow,pricePrior);
+var spreadPct=pctChg(spreadNow,spreadPrior);
+var volPct=pctChg(volNow,volPrior);
+var negPct=pctChg(negNow,negPrior);
+var bessPct=pctChg(bessNow,bessPrior);
+var periodAvgBess=aAvg(ds.map(function(d){return d.bessRev}));
+var periodAvgSpread=aAvg(ds.map(function(d){return d.spread}));
+var periodAvgVol=aAvg(ds.map(function(d){return d.stdDev}));
+var tab=activeTab;
+
+/* ---- TAB 0: SUMMARY ---- */
+if(tab===0){
+/* Price regime */
+if(priceNow<30)ins.push({t:"Average power price at "+"\u20AC"+fmt(priceNow)+"/MWh places the market in a <b>low-price regime</b>, typical of periods with strong renewable output or low demand.",c:"neut"});
+else if(priceNow<60)ins.push({t:"Average price at "+"\u20AC"+fmt(priceNow)+"/MWh indicates a <b>moderate price regime</b>, consistent with balanced supply-demand fundamentals.",c:"neut"});
+else if(priceNow<100)ins.push({t:"Elevated average price at "+"\u20AC"+fmt(priceNow)+"/MWh signals a <b>high-price regime</b> \u2014 likely driven by tight supply, high gas prices, or weather-driven demand.",c:"warn"});
+else ins.push({t:"Extreme average price at "+"\u20AC"+fmt(priceNow)+"/MWh indicates <b>market stress</b> \u2014 investigate supply outages, fuel cost spikes, or interconnector constraints.",c:"bear"});
+/* Price trend */
+if(pricePct!==null){
+if(pricePct>10)ins.push({t:"Prices trending <b>upward</b> ("+fmtPct(pricePct)+" vs prior 7d) \u2014 rising marginal generation costs or tightening supply.",c:"bear"});
+else if(pricePct<-10)ins.push({t:"Prices trending <b>downward</b> ("+fmtPct(pricePct)+" vs prior 7d) \u2014 improving supply conditions or weakening demand.",c:"bull"});
+else ins.push({t:"Prices <b>stable</b> week-on-week ("+fmtPct(pricePct)+"), indicating settled market fundamentals.",c:"neut"})}
+/* BESS attractiveness */
+if(bessNow>periodAvgBess*1.3)ins.push({t:"BESS revenue at "+"\u20AC"+fmt(bessNow)+"/MW/day is <b>"+Math.round(bessNow/periodAvgBess*100)+"% of period average</b> \u2014 above-average arbitrage conditions.",c:"bull"});
+else if(bessNow<periodAvgBess*0.7)ins.push({t:"BESS revenue at "+"\u20AC"+fmt(bessNow)+"/MW/day is <b>below period average</b> \u2014 compressed spreads are limiting arbitrage opportunity.",c:"bear"});
+/* Solar cannibalization */
+if(solarNow<0.8)ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> (below 0.80) \u2014 <b>severe midday price depression</b>. Uncontracted solar assets earning significantly below market average.",c:"bear"});
+else if(solarNow<0.9)ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> \u2014 moderate midday price suppression. Solar capture rates below daily average.",c:"warn"});
+else if(solarNow<1.0)ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> \u2014 mild suppression, solar capture close to market average.",c:"neut"});
+else ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> (above 1.0) \u2014 midday prices exceed daily average, favourable for solar revenue.",c:"bull"});
+/* Neg hours */
+if(negNow>2)ins.push({t:"<b>"+negNow.toFixed(1)+" negative hours/day</b> in the past week \u2014 significant oversupply events, positive for BESS (charge at negative prices) but destructive for unhedged generators.",c:"warn"});
+else if(negNow>0.5)ins.push({t:negNow.toFixed(1)+" negative hours/day recently \u2014 occasional oversupply events, monitor for seasonal patterns.",c:"neut"});
+/* Annualised BESS */
+var annBess=periodAvgBess*365;
+ins.push({t:"Period-average BESS revenue annualises to ~<b>"+"\u20AC"+Math.round(annBess).toLocaleString()+"/MW/yr</b> (theoretical 1-cycle, 88% RTE).",c:"neut"});
+}
+
+/* ---- TAB 1: BESS ECONOMICS ---- */
+else if(tab===1){
+if(bessPct!==null){
+if(bessPct>15)ins.push({t:"BESS revenue trending <b>strongly upward</b> ("+fmtPct(bessPct)+" WoW) \u2014 widening spreads are boosting arbitrage income.",c:"bull"});
+else if(bessPct>5)ins.push({t:"BESS revenue trending <b>modestly higher</b> ("+fmtPct(bessPct)+" WoW).",c:"bull"});
+else if(bessPct<-15)ins.push({t:"BESS revenue <b>declining sharply</b> ("+fmtPct(bessPct)+" WoW) \u2014 spread compression impacting arbitrage economics.",c:"bear"});
+else if(bessPct<-5)ins.push({t:"BESS revenue trending <b>slightly lower</b> ("+fmtPct(bessPct)+" WoW).",c:"bear"});
+else ins.push({t:"BESS revenue <b>stable</b> week-on-week ("+fmtPct(bessPct)+").",c:"neut"})}
+/* Spike days */
+var spikeDays=0;for(var i=n-w30;i<n;i++)if(ds[i].bessRev>periodAvgBess*2)spikeDays++;
+var spikePct=Math.round(spikeDays/w30*100);
+if(spikePct>30)ins.push({t:"<b>"+spikePct+"% of recent days</b> had revenue exceeding 2x period average \u2014 high-spike environment favourable for opportunistic trading strategies.",c:"bull"});
+else if(spikePct>10)ins.push({t:spikePct+"% of recent days exceeded 2x average revenue \u2014 moderate spike frequency.",c:"neut"});
+else ins.push({t:"Only "+spikePct+"% of recent days exceeded 2x average \u2014 relatively low spike frequency, steady-state revenue environment.",c:"neut"});
+/* Weekend vs weekday */
+var wdSum=0,wdCnt=0,weSum=0,weCnt=0;
+for(var i=0;i<n;i++){if(ds[i].dow===0||ds[i].dow===6){weSum+=ds[i].bessRev;weCnt++}else{wdSum+=ds[i].bessRev;wdCnt++}}
+var wdAvg=wdCnt?wdSum/wdCnt:0,weAvg=weCnt?weSum/weCnt:0;
+if(wdAvg>0&&weAvg>0){var weDiff=Math.round((weAvg/wdAvg-1)*100);
+if(weDiff<-20)ins.push({t:"Weekend revenue averages <b>"+Math.abs(weDiff)+"% lower</b> than weekdays \u2014 schedule maintenance during weekends to maximise availability during high-value periods.",c:"neut"});
+else if(weDiff>10)ins.push({t:"Weekend revenue surprisingly <b>"+weDiff+"% above</b> weekdays \u2014 unusual pattern, possibly driven by renewable intermittency or demand anomalies.",c:"neut"})}
+/* Cumulative */
+var cumTotal=A.cumBess[n-1];
+var annRate=cumTotal/n*365;
+ins.push({t:"Cumulative theoretical BESS revenue: <b>"+"\u20AC"+Math.round(cumTotal).toLocaleString()+"/MW</b> over "+n+" days (annualised rate: "+"\u20AC"+Math.round(annRate).toLocaleString()+"/MW/yr).",c:"neut"});
+}
+
+/* ---- TAB 2: SPREAD DURATION ---- */
+else if(tab===2){
+var spreads=ds.map(function(d){return d.spread}).sort(function(a,b){return b-a});
+var p50=spreads[Math.floor(spreads.length*0.5)];
+var p90=spreads.length>10?spreads[Math.floor(spreads.length*0.1)]:spreads[0];
+var mean=aAvg(spreads);
+var above50=0,above100=0,above200=0;
+for(var i=0;i<spreads.length;i++){if(spreads[i]>=50)above50++;if(spreads[i]>=100)above100++;if(spreads[i]>=200)above200++}
+ins.push({t:"<b>P50 spread: "+"\u20AC"+fmt(p50)+"/MWh</b> \u2014 on a typical (median) day, the daily price range is "+"\u20AC"+fmt(p50)+". At 88% RTE this implies ~"+"\u20AC"+fmt(p50*RTE)+"/MW/day baseline BESS revenue.",c:"neut"});
+if(p90>p50*2)ins.push({t:"P90 spread at "+"\u20AC"+fmt(p90)+" is <b>"+Math.round(p90/p50)+"x the median</b> \u2014 significant right-tail optionality. The best 10% of days offer outsized returns.",c:"bull"});
+else ins.push({t:"P90 spread at "+"\u20AC"+fmt(p90)+" \u2014 moderate upside beyond the median day.",c:"neut"});
+var pctAbove100=Math.round(above100/spreads.length*100);
+if(pctAbove100>20)ins.push({t:"<b>"+pctAbove100+"% of days</b> achieve spreads "+"\u2265"+"\u20AC"+"100/MWh \u2014 strong structural support for BESS investment cases.",c:"bull"});
+else if(pctAbove100>5)ins.push({t:pctAbove100+"% of days achieve spreads "+"\u2265"+"\u20AC"+"100/MWh \u2014 moderate opportunity frequency.",c:"neut"});
+else ins.push({t:"Only "+pctAbove100+"% of days exceed "+"\u20AC"+"100/MWh spread \u2014 limited high-value arbitrage days.",c:"bear"});
+if(spreadPct!==null){
+if(spreadPct>15)ins.push({t:"Spread trend is <b>expanding</b> ("+fmtPct(spreadPct)+" WoW) \u2014 rising volatility improving the revenue distribution.",c:"bull"});
+else if(spreadPct<-15)ins.push({t:"Spread trend is <b>compressing</b> ("+fmtPct(spreadPct)+" WoW) \u2014 the duration curve may be shifting left (lower values).",c:"bear"});
+}
+}
+
+/* ---- TAB 3: PRICE STRUCTURE ---- */
+else if(tab===3){
+var peakNow=rAvg("peakAvg",w7),offpeakNow=rAvg("offpeakAvg",w7),solarAvgNow=rAvg("solarAvg",w7);
+var pkopRatio=offpeakNow!==0?peakNow/offpeakNow:1;
+if(pkopRatio>1.5)ins.push({t:"Peak/off-peak ratio at <b>"+pkopRatio.toFixed(2)+"x</b> \u2014 <b>wide structural spread</b> between day and night prices, highly favourable for time-shifting assets (BESS, demand response).",c:"bull"});
+else if(pkopRatio>1.2)ins.push({t:"Peak/off-peak ratio at <b>"+pkopRatio.toFixed(2)+"x</b> \u2014 moderate premium for peak hours.",c:"neut"});
+else if(pkopRatio>1.0)ins.push({t:"Peak/off-peak ratio at <b>"+pkopRatio.toFixed(2)+"x</b> \u2014 narrow premium, limited time-of-day arbitrage.",c:"bear"});
+else ins.push({t:"Peak/off-peak ratio <b>inverted</b> at "+pkopRatio.toFixed(2)+"x \u2014 off-peak prices exceed peak, unusual market conditions.",c:"warn"});
+/* Solar cannib with direction */
+if(solarNow<0.85&&solarTrend<-2)ins.push({t:"Solar cannibalisation is <b>worsening</b> (index "+solarNow.toFixed(2)+", trend "+fmtPct(solarTrend)+") \u2014 increasing solar penetration is deepening the midday price trough. Solar capture rates under pressure.",c:"bear"});
+else if(solarNow<0.85&&solarTrend>2)ins.push({t:"Solar cannibalisation remains <b>severe</b> (index "+solarNow.toFixed(2)+") but is <b>improving</b> ("+fmtPct(solarTrend)+") \u2014 demand growth or storage may be absorbing solar output.",c:"bull"});
+else if(solarNow<0.9)ins.push({t:"Moderate solar cannibalisation (index "+solarNow.toFixed(2)+") \u2014 midday prices suppressed below daily average.",c:"neut"});
+/* Peak premium trend */
+var pkTrend=trend(A.peakRatio,w30);
+if(pkTrend>5)ins.push({t:"Peak premium <b>widening</b> (+"+pkTrend.toFixed(1)+"% trend) \u2014 evening/morning scarcity pricing increasing relative to off-peak.",c:"bull"});
+else if(pkTrend<-5)ins.push({t:"Peak premium <b>narrowing</b> ("+pkTrend.toFixed(1)+"% trend) \u2014 convergence between peak and off-peak reduces time-shifting value.",c:"bear"});
+/* Solar vs off-peak */
+if(solarAvgNow<offpeakNow)ins.push({t:"Solar hours (10-14h) now pricing <b>below off-peak</b> ("+"\u20AC"+fmt(solarAvgNow)+" vs "+"\u20AC"+fmt(offpeakNow)+") \u2014 uncontracted solar earns less than even nighttime generation.",c:"bear"});
+}
+
+/* ---- TAB 4: VOLATILITY & RISK ---- */
+else if(tab===4){
+/* Vol regime */
+if(volNow<10)ins.push({t:"Daily volatility at "+"\u20AC"+fmt(volNow)+"/MWh (7d avg) \u2014 <b>low volatility regime</b>. Limited intraday price swings reduce arbitrage opportunity.",c:"bear"});
+else if(volNow<25)ins.push({t:"Daily volatility at "+"\u20AC"+fmt(volNow)+"/MWh (7d avg) \u2014 <b>moderate volatility</b>, supporting reasonable BESS arbitrage.",c:"neut"});
+else if(volNow<50)ins.push({t:"Daily volatility at "+"\u20AC"+fmt(volNow)+"/MWh (7d avg) \u2014 <b>elevated volatility</b> creating attractive spread opportunity for flexible assets.",c:"bull"});
+else ins.push({t:"Daily volatility at "+"\u20AC"+fmt(volNow)+"/MWh (7d avg) \u2014 <b>extreme volatility</b>. Investigate fuel price spikes, weather events, or outages driving wild price swings.",c:"warn"});
+/* Vol trend */
+if(volPct!==null){
+if(volPct>20)ins.push({t:"Volatility trending <b>sharply higher</b> ("+fmtPct(volPct)+" WoW) \u2014 widening intraday swings signal growing flexibility value.",c:"bull"});
+else if(volPct<-20)ins.push({t:"Volatility <b>compressing</b> ("+fmtPct(volPct)+" WoW) \u2014 flatter daily profiles may indicate increased baseload/storage smoothing.",c:"bear"});
+}
+/* Neg pricing */
+var totalNeg=0;for(var i=0;i<n;i++)totalNeg+=ds[i].negHours;
+var daysWithNeg=0;for(var i=0;i<n;i++)if(ds[i].negHours>0)daysWithNeg++;
+var pctNeg=Math.round(daysWithNeg/n*100);
+if(pctNeg>40)ins.push({t:"<b>"+pctNeg+"% of days</b> experienced negative prices \u2014 structural oversupply a regular feature. BESS benefits from charging at negative prices; unhedged generators face revenue erosion.",c:"warn"});
+else if(pctNeg>15)ins.push({t:pctNeg+"% of days had negative price hours \u2014 notable but not pervasive.",c:"neut"});
+else if(pctNeg>0)ins.push({t:"Negative pricing on "+pctNeg+"% of days \u2014 relatively uncommon, limited oversupply events.",c:"neut"});
+else ins.push({t:"No negative pricing observed in this period \u2014 supply-demand balanced throughout.",c:"bull"});
+/* Neg trend */
+if(negPct!==null&&negNow>0.1){
+if(negPct>30)ins.push({t:"Negative hours <b>increasing</b> ("+fmtPct(negPct)+" WoW) \u2014 worsening oversupply conditions, likely renewable-driven.",c:"warn"});
+else if(negPct<-30)ins.push({t:"Negative hours <b>declining</b> ("+fmtPct(negPct)+" WoW) \u2014 improving market absorption of surplus generation.",c:"bull"});
+}
+/* Outlier days */
+var volArr=ds.map(function(d){return d.stdDev});
+var volMean=aAvg(volArr),volStd=aStd(volArr);
+var outlierCnt=0;for(var i=Math.max(0,n-w30);i<n;i++)if(ds[i].stdDev>volMean+2*volStd)outlierCnt++;
+if(outlierCnt>0)ins.push({t:"<b>"+outlierCnt+" extreme volatility day"+(outlierCnt>1?"s":"")+"</b> in the last "+w30+" days (>2"+"\u03C3"+" from mean) \u2014 investigate specific event drivers.",c:"warn"});
+}
+
+/* ---- TAB 5: DAILY PROFILES ---- */
+else if(tab===5){
+/* Profile shape: check duck curve */
+var avgProfile=[];for(var h=0;h<24;h++){var s=0,c=0;for(var i=0;i<n;i++){if(ds[i].hourly[h]!==null){s+=ds[i].hourly[h];c++}}avgProfile.push(c?s/c:0)}
+var morningPeak=Math.max(avgProfile[7],avgProfile[8],avgProfile[9]);
+var middayTrough=Math.min(avgProfile[11],avgProfile[12],avgProfile[13]);
+var eveningPeak=Math.max(avgProfile[17],avgProfile[18],avgProfile[19]);
+var duckDepth=morningPeak-middayTrough;
+var eveningRamp=eveningPeak-middayTrough;
+if(eveningRamp>20)ins.push({t:"Average profile shows a <b>pronounced duck curve</b> with "+"\u20AC"+fmt(eveningRamp)+"/MWh evening ramp \u2014 strong BESS charge-at-midday / discharge-at-evening opportunity.",c:"bull"});
+else if(eveningRamp>10)ins.push({t:"Moderate evening ramp of "+"\u20AC"+fmt(eveningRamp)+"/MWh in the average daily profile.",c:"neut"});
+else ins.push({t:"Relatively <b>flat</b> average daily profile ("+"\u20AC"+fmt(eveningRamp)+"/MWh evening ramp) \u2014 limited intraday shape for time-shifting.",c:"bear"});
+if(duckDepth>15&&middayTrough<morningPeak*0.7)ins.push({t:"Midday trough at "+"\u20AC"+fmt(middayTrough)+"/MWh is <b>"+Math.round((1-middayTrough/morningPeak)*100)+"% below the morning peak</b> \u2014 solar generation visibly depressing midday prices.",c:"neut"});
+/* Variability */
+var peakHourStdDevs=[];for(var h=17;h<20;h++){var vals=[];for(var i=0;i<n;i++)if(ds[i].hourly[h]!==null)vals.push(ds[i].hourly[h]);peakHourStdDevs.push(aStd(vals))}
+var avgPeakStd=aAvg(peakHourStdDevs);
+if(avgPeakStd>30)ins.push({t:"High price variability during peak hours (17-20h, "+"\u03C3"+"="+"\u20AC"+fmt(avgPeakStd)+") \u2014 evening discharge revenue is <b>volatile but with significant upside potential</b>.",c:"warn"});
+}
+
+/* ---- TAB 6: HEATMAP ---- */
+else if(tab===6){
+/* Identify most extreme hours */
+var hourExtremes=[];for(var h=0;h<24;h++){var vals=[];for(var i=0;i<n;i++){if(ds[i].hourly[h]!==null)vals.push(ds[i].hourly[h])}
+hourExtremes.push({h:h,avg:aAvg(vals),min:aMin(vals),max:aMax(vals)})}
+hourExtremes.sort(function(a,b){return b.avg-a.avg});
+var highH=hourExtremes[0],lowH=hourExtremes[23];
+ins.push({t:"<b>Highest average price at "+String(highH.h).padStart(2,"0")+":00</b> ("+"\u20AC"+fmt(highH.avg)+"/MWh) \u2014 optimal BESS discharge window.",c:"bull"});
+ins.push({t:"<b>Lowest average price at "+String(lowH.h).padStart(2,"0")+":00</b> ("+"\u20AC"+fmt(lowH.avg)+"/MWh) \u2014 optimal BESS charge window.",c:"bull"});
+var optSpread=highH.avg-lowH.avg;
+ins.push({t:"Optimal charge/discharge spread of <b>"+"\u20AC"+fmt(optSpread)+"/MWh</b> between hour "+lowH.h+" and hour "+highH.h+".",c:"neut"});
+/* Negative clustering */
+var negByHour=[];for(var h=0;h<24;h++){var cnt=0;for(var i=0;i<n;i++){if(ds[i].hourly[h]!==null&&ds[i].hourly[h]<0)cnt++}negByHour.push({h:h,pct:Math.round(cnt/n*100)})}
+negByHour.sort(function(a,b){return b.pct-a.pct});
+if(negByHour[0].pct>10)ins.push({t:"Negative prices most frequent at <b>"+String(negByHour[0].h).padStart(2,"0")+":00</b> ("+negByHour[0].pct+"% of days) \u2014 consistent oversupply window, ideal for low-cost/negative-cost charging.",c:"neut"});
+}
+
+/* ---- TAB 7: TB SPREADS ---- */
+else if(tab===7){
+var tb1Now=rAvg("tb1",w7),tb4Now=rAvg("tb4",w7),tb2Now=rAvg("tb2",w7);
+var tb1Prior=pAvg("tb1",w7),tb4Prior=pAvg("tb4",w7);
+var tb1Pct=pctChg(tb1Now,tb1Prior),tb4Pct=pctChg(tb4Now,tb4Prior);
+var tb1Avg=aAvg(ds.map(function(d){return d.tb1}));
+ins.push({t:"TB1 (7d) at <b>"+"\u20AC"+fmt(tb1Now)+"/MWh</b>"+(tb1Pct!==null?" ("+fmtPct(tb1Pct)+" WoW)":"")+" \u2014 "+(tb1Now>tb1Avg*1.2?"above":"below")+" period average of "+"\u20AC"+fmt(tb1Avg)+".",c:tb1Now>tb1Avg*1.2?"bull":tb1Now<tb1Avg*0.8?"bear":"neut"});
+ins.push({t:"TB4 (7d) at <b>"+"\u20AC"+fmt(tb4Now)+"/MWh</b>"+(tb4Pct!==null?" ("+fmtPct(tb4Pct)+" WoW)":"")+" \u2014 4-hour battery benchmark.",c:tb4Pct!==null&&tb4Pct>10?"bull":tb4Pct!==null&&tb4Pct<-10?"bear":"neut"});
+/* TB1 vs TB2 gap = outlier dependence */
+var outlierGap=tb1Now-tb2Now;
+if(tb2Now>0){var gapPct=Math.round(outlierGap/tb1Now*100);
+if(gapPct>40)ins.push({t:"TB1-TB2 gap is <b>"+gapPct+"% of TB1</b> \u2014 revenue heavily dependent on single-hour price outliers. TB2 provides a more conservative achievable estimate.",c:"warn"});
+else if(gapPct<15)ins.push({t:"TB1-TB2 gap is only "+gapPct+"% \u2014 spreads are <b>well-distributed</b> across hours, not reliant on outliers.",c:"bull"});
+}
+/* TB trend */
+var tb1Trend=trend(A.rollTB1_7,w30);
+if(tb1Trend>15)ins.push({t:"TB1 on a <b>rising trend</b> (+"+tb1Trend.toFixed(1)+"% over 30d) \u2014 expanding single-cycle arbitrage opportunity.",c:"bull"});
+else if(tb1Trend<-15)ins.push({t:"TB1 on a <b>declining trend</b> ("+tb1Trend.toFixed(1)+"% over 30d) \u2014 compressing peak-to-trough spreads.",c:"bear"});
+/* Multi-cycle value */
+if(tb4Now>tb1Now*3)ins.push({t:"TB4 exceeds 3x TB1 \u2014 <b>strong multi-cycle value</b>. Additional BESS cycles within the day capture significant incremental revenue.",c:"bull"});
+else if(tb4Now<tb1Now*2)ins.push({t:"TB4 below 2x TB1 \u2014 limited incremental value from additional cycles. Single-cycle BESS captures most of the daily spread.",c:"neut"});
+}
+
+return ins;
+}
+
+function renderInsights(){
+var box=document.getElementById("aibox");if(!box)return;
+if(!A.daily||!A.daily.length){box.innerHTML="";return}
+var ins=generateInsights();
+if(!ins.length){box.innerHTML="";return}
+var tabNames=["Summary","BESS Economics","Spread Duration","Price Structure","Volatility & Risk","Daily Profiles","Heatmap","TB Spreads"];
+var html='<div class="aibox"><div class="ai-hdr"><div class="ai-icon">AI</div><div class="ai-title">Market Insights \u2014 '+tabNames[activeTab]+'</div><div class="ai-mkt">'+currentBzn+' | '+A.daily.length+' days</div></div><div class="ai-items">';
+for(var i=0;i<ins.length;i++){
+var ic=ins[i].c==="bull"?"\u25B2":ins[i].c==="bear"?"\u25BC":ins[i].c==="warn"?"\u26A0":"\u25CF";
+html+='<div class="ai-item ai-'+ins[i].c+'"><span class="ai-ind">'+ic+'</span><span>'+ins[i].t+'</span></div>';
+}
+html+='</div></div>';
+box.innerHTML=html;
+}
+
 function draw(){if(!allPrices.length)return;
 if(activeTab===0)drawSummary();else if(activeTab===1)drawBessEcon();
 else if(activeTab===2)drawSpreadDuration();else if(activeTab===3)drawPriceStructure();
 else if(activeTab===4)drawVolatility();else if(activeTab===5)drawProfiles();
-else if(activeTab===6)drawHeatmap();else if(activeTab===7)drawTbSpreads()}
+else if(activeTab===6)drawHeatmap();else if(activeTab===7)drawTbSpreads();
+renderInsights()}
 
 function showTab(n){activeTab=n;var tabs=document.querySelectorAll(".tab");var panels=document.querySelectorAll(".panel");
 for(var i=0;i<tabs.length;i++){tabs[i].className=i===n?"tab active":"tab";panels[i].className=i===n?"panel active":"panel"}draw()}

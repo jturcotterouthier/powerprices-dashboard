@@ -1105,15 +1105,17 @@ var fetchCache={};
 var activeAbort=null;
 var preferredProxy=null;
 
-function proxyUrls(url){return[
-{name:"direct",url:url},
-{name:"codetabs",url:"https://api.codetabs.com/v1/proxy?quest="+encodeURIComponent(url)},
-{name:"corsproxy",url:"https://corsproxy.org/?url="+encodeURIComponent(url)}
-]}
+var proxyBuilders={
+direct:function(u){return u},
+codetabs:function(u){return"https://api.codetabs.com/v1/proxy?quest="+encodeURIComponent(u)},
+corsproxy:function(u){return"https://corsproxy.org/?url="+encodeURIComponent(u)}
+};
+
+function proxyUrls(url){return Object.keys(proxyBuilders).map(function(name){return{name:name,url:proxyBuilders[name](url)}})}
 
 function raceFetch(url,signal){
 var proxies=preferredProxy?
-[{name:preferredProxy.name,url:preferredProxy.build(url)}].concat(proxyUrls(url).filter(function(p){return p.name!==preferredProxy.name})):
+[{name:preferredProxy.name,url:proxyBuilders[preferredProxy.name](url)}].concat(proxyUrls(url).filter(function(p){return p.name!==preferredProxy.name})):
 proxyUrls(url);
 return new Promise(function(resolve,reject){
 var done=false,errors=0,total=proxies.length;
@@ -1121,7 +1123,7 @@ proxies.forEach(function(p){
 fetch(p.url,{signal:signal}).then(function(r){
 if(!r.ok)throw new Error("HTTP "+r.status);return r.json().then(function(data){
 if(!done){done=true;
-if(!preferredProxy)preferredProxy={name:p.name,build:p.name==="direct"?function(u){return u}:p.name==="codetabs"?function(u){return"https://api.codetabs.com/v1/proxy?quest="+encodeURIComponent(u)}:function(u){return"https://corsproxy.org/?url="+encodeURIComponent(u)}};
+if(!preferredProxy)preferredProxy={name:p.name};
 resolve(data)}})
 }).catch(function(e){
 if(!done){errors++;if(errors>=total)reject(new Error("All "+total+" fetch methods failed"))}

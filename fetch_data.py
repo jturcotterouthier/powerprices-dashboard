@@ -22,6 +22,7 @@ import sys
 import time
 import urllib.request
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -213,8 +214,14 @@ def main():
 
     os.makedirs(DATA_DIR, exist_ok=True)
 
-    for market in markets:
-        fetch_market(market, start_date, end_date)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {pool.submit(fetch_market, m, start_date, end_date): m for m in markets}
+        for future in as_completed(futures):
+            market = futures[future]
+            try:
+                future.result()
+            except Exception as e:
+                print(f"  [{market}] Error: {e}")
 
     print(f"\n{'=' * 40}")
     print("Done! Dashboard will automatically load from local data.")

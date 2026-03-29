@@ -1,257 +1,768 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>European Power Prices — PE Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0a1a;color:#e0e0e0;padding:12px;max-width:1440px;margin:0 auto}
-.hdr{text-align:center;margin-bottom:10px}
-.hdr h1{font-size:1.3em;color:#fff}
-.hdr p{font-size:.75em;color:#888;margin-top:2px}
-.ctrl{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
-.ctrl label{font-size:.8em;color:#aaa}
-.ctrl select{background:#1a1a2e;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;font-size:.8em}
-.ctrl button{background:#2a2a4e;color:#fff;border:1px solid #444;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:.8em}
-.ctrl button:hover{background:#3a3a6e}
-.ctrl button.active{background:#4a6cf7;border-color:#4a6cf7}
-.tabs{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
-.tab{padding:5px 12px;background:#1a1a2e;border:1px solid #333;border-radius:4px 4px 0 0;cursor:pointer;font-size:.75em;color:#aaa;white-space:nowrap}
-.tab.active{background:#2a2a4e;color:#fff;border-bottom-color:#2a2a4e}
-.panel{display:none;background:#1a1a2e;border:1px solid #333;border-radius:0 4px 4px 4px;padding:12px}
-.panel.active{display:block}
-canvas{width:100%;background:#0d0d22;border-radius:4px}
-#status{font-size:.72em;color:#888;text-align:center;margin:4px 0}
-.footer{text-align:center;margin-top:10px;font-size:.68em;color:#666}
-.footer a{color:#4a6cf7}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;margin-bottom:10px}
-.kpi{background:#12122a;border:1px solid #2a2a4e;border-radius:6px;padding:10px 12px;position:relative}
-.kpi .kl{font-size:.68em;color:#888;margin-bottom:2px}
-.kpi .kv{font-size:1.2em;font-weight:700;color:#fff}
-.kpi .kc{font-size:.72em;margin-top:2px}
-.kpi .kc.pos{color:#22c55e}
-.kpi .kc.neg{color:#ef4444}
-.kpi .kc.flat{color:#888}
-.spark{display:block;margin-top:4px;width:100%;height:28px}
-.cnote{font-size:.68em;color:#666;text-align:center;margin:4px 0;font-style:italic}
-.legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:6px 0;font-size:.72em}
-.legend span{display:flex;align-items:center;gap:4px}
-.legend i{display:inline-block;width:18px;height:3px;border-radius:2px}
-.tbl{max-height:320px;overflow-y:auto;margin-top:8px}
-table{width:100%;border-collapse:collapse;font-size:.72em}
-th,td{padding:4px 8px;border:1px solid #222;text-align:right}
-th{background:#1e1e3a;position:sticky;top:0;color:#aaa;font-weight:600}
-td:first-child,th:first-child{text-align:left}
-.pos{color:#22c55e}.neg{color:#ef4444}
-.hl-row{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:4px}
-.hl-row label{font-size:.8em;color:#aaa}
-.hl-row input[type="date"]{background:#1a1a2e;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;font-size:.8em}
-.hl-row button{background:#2a2a4e;color:#fff;border:1px solid #444;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:.75em}
-.hl-row button:hover{background:#3a3a6e}
-.slider-row{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:6px;padding:0 40px}
-.slider-row label{font-size:.72em;color:#666;white-space:nowrap}
-#hlSlider{flex:1;max-width:500px;accent-color:#4a6cf7;cursor:pointer}
-.mtbl{margin-top:10px}
-.mtbl table{font-size:.7em}
-.mtbl th{font-size:.7em;background:#1e1e3a}
-.sub-title{font-size:.8em;color:#aaa;text-align:center;margin:8px 0 4px}
-.dow-row{display:flex;gap:4px;justify-content:center;margin-top:8px}
-.dow-bar{display:flex;flex-direction:column;align-items:center;font-size:.65em;color:#888}
-.dow-bar .db{background:#4a6cf7;border-radius:2px 2px 0 0;min-width:28px}
-.dow-bar .dl{margin-top:2px}
-.dow-bar .dv{margin-top:1px;color:#aaa;font-size:.9em}
-.footnote{margin-top:10px;padding:10px 14px;background:#0d0d22;border:1px solid #222;border-radius:4px;font-size:.68em;color:#777;line-height:1.6}.footnote b{color:#aaa;font-weight:600}.footnote .fn-section{margin-bottom:6px}.footnote .fn-section:last-child{margin-bottom:0}.fn-icon{display:inline-block;width:14px;height:14px;border-radius:50%;background:#1e1e3a;color:#4a6cf7;text-align:center;line-height:14px;font-size:9px;font-weight:700;margin-right:4px;vertical-align:middle}
-.tb-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-bottom:10px}
-.tb-card{background:#12122a;border:1px solid #2a2a4e;border-radius:6px;padding:10px 12px}
-.tb-card h4{font-size:.78em;color:#4a6cf7;margin-bottom:4px}
-.tb-card p{font-size:.68em;color:#888;line-height:1.4}
-.tb-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
-.tb-kpi{background:#12122a;border:1px solid #2a2a4e;border-radius:6px;padding:10px 12px;text-align:center}
-.tb-kpi .tk-label{font-size:.65em;color:#888;text-transform:uppercase;letter-spacing:.5px}
-.tb-kpi .tk-val{font-size:1.3em;font-weight:700;margin:2px 0}
-.tb-kpi .tk-sub{font-size:.65em;color:#666}
-.tb-toggle{display:flex;gap:4px;justify-content:center;margin-bottom:8px}
-.tb-toggle button{background:#1a1a2e;color:#aaa;border:1px solid #333;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:.72em}
-.tb-toggle button.active{background:#4a6cf7;color:#fff;border-color:#4a6cf7}
-.aibox{margin-top:12px;background:#12122a;border:1px solid #2a2a4e;border-radius:6px;padding:14px 16px;position:relative;overflow:hidden}
-.aibox::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#4a6cf7,#a855f7,#4a6cf7);background-size:200% 100%;animation:aiShimmer 3s linear infinite}
-@keyframes aiShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.ai-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-.ai-hdr .ai-icon{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#4a6cf7,#a855f7);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;flex-shrink:0}
-.ai-hdr .ai-title{font-size:.78em;font-weight:600;color:#ccc;letter-spacing:.3px}
-.ai-hdr .ai-mkt{font-size:.65em;color:#666;margin-left:auto}
-.ai-items{display:flex;flex-direction:column;gap:5px}
-.ai-item{display:flex;align-items:flex-start;gap:8px;font-size:.72em;line-height:1.5;color:#bbb}
-.ai-item .ai-ind{flex-shrink:0;font-size:.85em;width:16px;text-align:center;margin-top:1px}
-.ai-bull .ai-ind{color:#22c55e}
-.ai-bear .ai-ind{color:#ef4444}
-.ai-neut .ai-ind{color:#4a6cf7}
-.ai-warn .ai-ind{color:#f97316}
-</style></head><body>
-<div class="hdr"><h1>European Day-Ahead Power Prices</h1><p>PE Analytics Dashboard | EPEX Spot &amp; Nord Pool | Source: Energy-Charts (Fraunhofer ISE) | CC BY 4.0</p></div>
+:root {
+  --color-primary: #4a6cf7;
+  --color-success: #22c55e;
+  --color-warning: #f97316;
+  --color-danger: #ef4444;
+  --color-accent: #a855f7;
+  --color-cyan: #06b6d4;
+  --color-yellow: #eab308;
+  --color-pink: #f472b6;
+  --color-surface: rgba(18, 18, 42, 0.8);
+  --color-surface-alt: rgba(22, 22, 48, 0.6);
+  --color-surface-hover: rgba(26, 26, 46, 0.9);
+  --color-border: rgba(255,255,255,0.06);
+  --color-border-bright: rgba(255,255,255,0.12);
+  --color-text: #e0e0e0;
+  --color-text-muted: #888;
+  --color-text-dim: #555;
+  --color-bg: #0a0a1a;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+  --transition: 0.3s ease;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #0a0a1a 0%, #0d1117 50%, #0a0a1a 100%);
+  background-attachment: fixed;
+  color: var(--color-text);
+  padding: 16px 20px;
+  max-width: 1480px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* Header */
+.hdr { text-align: center; margin-bottom: 20px; padding: 8px 0; }
+.hdr h1 {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #fff 0%, #4a6cf7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hdr p {
+  font-size: 0.72em;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+
+/* Controls bar */
+.ctrl {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.ctrl label { font-size: 0.78em; color: var(--color-text-muted); font-weight: 500; }
+.mkt-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.mkt-wrap::before {
+  content: "\1F50D";
+  position: absolute;
+  left: 8px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+.ctrl select {
+  background: rgba(26,26,46,0.9);
+  color: #fff;
+  border: 1px solid var(--color-border-bright);
+  padding: 6px 12px 6px 28px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8em;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+.ctrl select:hover { border-color: var(--color-primary); }
+.ctrl select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(74,108,247,0.2); }
+.range-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.ctrl button, .range-btns button {
+  background: rgba(26,26,46,0.8);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-bright);
+  padding: 5px 12px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: 0.78em;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all var(--transition);
+}
+.ctrl button:hover, .range-btns button:hover { background: rgba(74,108,247,0.15); border-color: var(--color-primary); }
+.ctrl button.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+.ctrl input[type="date"] {
+  background: rgba(26,26,46,0.9);
+  color: #fff;
+  border: 1px solid var(--color-border-bright);
+  padding: 5px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 0.78em;
+  font-family: inherit;
+}
+.ctrl .sep { color: var(--color-text-dim); margin: 0 2px; user-select: none; }
+
+/* Status bar */
+#status {
+  font-size: 0.72em;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 6px 0;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  letter-spacing: 0.02em;
+}
+
+/* Loading spinner */
+.loader {
+  display: none;
+  text-align: center;
+  padding: 40px;
+}
+.loader.active { display: block; }
+.loader .spin {
+  width: 32px; height: 32px;
+  border: 3px solid var(--color-border-bright);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader span { font-size: 0.75em; color: var(--color-text-muted); }
+
+/* Segmented Control */
+.seg-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding: 2px 0;
+  -webkit-overflow-scrolling: touch;
+}
+.seg-control {
+  display: inline-flex;
+  position: relative;
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 3px;
+  gap: 2px;
+}
+.seg-btn {
+  position: relative;
+  z-index: 1;
+  padding: 7px 16px;
+  font-size: 0.75em;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius) - 3px);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition);
+}
+.seg-btn:hover { color: var(--color-text); }
+.seg-btn.active { color: #fff; }
+.seg-indicator {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: calc(100% - 6px);
+  background: var(--color-primary);
+  border-radius: calc(var(--radius) - 3px);
+  transition: transform 0.3s ease, width 0.3s ease;
+  z-index: 0;
+}
+
+/* Panels */
+.panel {
+  display: none;
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.panel.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Export toolbar */
+.export-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(26,26,46,0.8);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-bright);
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 0.7em;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.export-btn:hover { background: rgba(74,108,247,0.15); color: var(--color-text); border-color: var(--color-primary); }
+.export-btn svg { width: 14px; height: 14px; }
+
+/* KPI cards */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.kpi {
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  transition: all var(--transition);
+  cursor: default;
+}
+.kpi:hover {
+  border-color: var(--color-border-bright);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.kpi .kl { font-size: 0.68em; color: var(--color-text-muted); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
+.kpi .kv { font-size: 1.25em; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+.kpi .kc { font-size: 0.72em; margin-top: 3px; font-weight: 500; }
+.kpi .kc.pos { color: var(--color-success); }
+.kpi .kc.neg { color: var(--color-danger); }
+.kpi .kc.flat { color: var(--color-text-muted); }
+.spark { display: block; margin-top: 6px; width: 100%; height: 32px; }
+
+/* Chart canvas */
+.chart-wrap { position: relative; width: 100%; }
+.chart-wrap canvas { width: 100% !important; border-radius: var(--radius-sm); }
+canvas { width: 100%; background: rgba(13,13,34,0.6); border-radius: var(--radius-sm); }
+
+/* Chart note */
+.cnote { font-size: 0.68em; color: var(--color-text-dim); text-align: center; margin: 6px 0; font-style: italic; }
+
+/* Legend */
+.legend { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 8px 0; font-size: 0.72em; }
+.legend span { display: flex; align-items: center; gap: 5px; color: var(--color-text-muted); }
+.legend i { display: inline-block; width: 20px; height: 3px; border-radius: 2px; }
+
+/* Tables */
+.tbl { max-height: 340px; overflow-y: auto; margin-top: 10px; border-radius: var(--radius-sm); }
+table { width: 100%; border-collapse: collapse; font-size: 0.72em; }
+th, td { padding: 6px 10px; border: 1px solid rgba(255,255,255,0.04); text-align: right; }
+th {
+  background: rgba(30,30,58,0.9);
+  position: sticky; top: 0;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.9em;
+  letter-spacing: 0.03em;
+}
+td:first-child, th:first-child { text-align: left; }
+tr:nth-child(even) td { background: rgba(18,18,42,0.4); }
+tr:hover td { background: rgba(74,108,247,0.05); }
+.pos { color: var(--color-success); }
+.neg { color: var(--color-danger); }
+
+/* Sub sections */
+.sub-title { font-size: 0.82em; color: var(--color-text-muted); text-align: center; margin: 12px 0 6px; font-weight: 600; }
+.mtbl { margin-top: 14px; }
+.mtbl table { font-size: 0.7em; }
+.mtbl th { font-size: 0.72em; }
+
+/* Highlight row (daily profiles) */
+.hl-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.hl-row label { font-size: 0.78em; color: var(--color-text-muted); font-weight: 500; }
+.hl-row input[type="date"] {
+  background: rgba(26,26,46,0.9);
+  color: #fff;
+  border: 1px solid var(--color-border-bright);
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 0.78em;
+  font-family: inherit;
+}
+.hl-row button {
+  background: rgba(26,26,46,0.8);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-bright);
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: 0.72em;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all var(--transition);
+}
+.hl-row button:hover { background: rgba(74,108,247,0.15); border-color: var(--color-primary); }
+
+/* Slider */
+.slider-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  padding: 0 40px;
+}
+.slider-row label { font-size: 0.72em; color: var(--color-text-dim); white-space: nowrap; }
+#hlSlider { flex: 1; max-width: 500px; accent-color: var(--color-primary); cursor: pointer; }
+
+/* DOW bars */
+.dow-row { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+.dow-bar { display: flex; flex-direction: column; align-items: center; font-size: 0.65em; color: var(--color-text-muted); }
+.dow-bar .db { background: var(--color-primary); border-radius: 3px 3px 0 0; min-width: 32px; transition: height var(--transition); }
+.dow-bar .dl { margin-top: 3px; font-weight: 500; }
+.dow-bar .dv { margin-top: 2px; color: var(--color-text); font-size: 0.95em; font-variant-numeric: tabular-nums; }
+
+/* TB cards */
+.tb-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.tb-card {
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.tb-card h4 { font-size: 0.78em; color: var(--color-primary); margin-bottom: 6px; font-weight: 600; }
+.tb-card p { font-size: 0.68em; color: var(--color-text-muted); line-height: 1.5; }
+.tb-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.tb-kpi {
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+  transition: all var(--transition);
+}
+.tb-kpi:hover { border-color: var(--color-border-bright); transform: translateY(-1px); }
+.tb-kpi .tk-label { font-size: 0.62em; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.tb-kpi .tk-val { font-size: 1.3em; font-weight: 700; margin: 3px 0; font-variant-numeric: tabular-nums; }
+.tb-kpi .tk-sub { font-size: 0.62em; color: var(--color-text-dim); }
+.tb-toggle { display: flex; gap: 4px; justify-content: center; margin-bottom: 10px; }
+.tb-toggle button {
+  background: rgba(26,26,46,0.8);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-bright);
+  padding: 4px 12px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: 0.72em;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all var(--transition);
+}
+.tb-toggle button:hover { border-color: var(--color-primary); }
+.tb-toggle button.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+/* Footnotes */
+.footnote {
+  margin-top: 14px;
+  padding: 14px 18px;
+  background: rgba(13,13,34,0.6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.68em;
+  color: var(--color-text-dim);
+  line-height: 1.7;
+}
+.footnote b { color: var(--color-text-muted); font-weight: 600; }
+.fn-section { margin-bottom: 8px; }
+.fn-section:last-child { margin-bottom: 0; }
+.fn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: rgba(74,108,247,0.15);
+  color: var(--color-primary);
+  font-size: 9px;
+  font-weight: 700;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* AI Insights */
+.aibox {
+  margin-top: 16px;
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.aibox::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent), var(--color-primary));
+  background-size: 200% 100%;
+  animation: aiShimmer 3s linear infinite;
+}
+@keyframes aiShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.ai-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ai-hdr .ai-icon {
+  width: 24px; height: 24px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #fff; font-weight: 700; flex-shrink: 0;
+}
+.ai-hdr .ai-title { font-size: 0.82em; font-weight: 600; color: #ccc; letter-spacing: 0.02em; }
+.ai-hdr .ai-mkt { font-size: 0.65em; color: var(--color-text-dim); margin-left: auto; font-family: 'SF Mono', monospace; }
+.ai-items { display: flex; flex-direction: column; gap: 8px; }
+.ai-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.75em;
+  line-height: 1.6;
+  color: var(--color-text);
+  padding: 8px 12px;
+  background: rgba(13,13,34,0.4);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid transparent;
+}
+.ai-item .ai-ind { flex-shrink: 0; font-size: 0.9em; width: 18px; text-align: center; margin-top: 2px; }
+.ai-bull { border-left-color: var(--color-success); }
+.ai-bull .ai-ind { color: var(--color-success); }
+.ai-bear { border-left-color: var(--color-danger); }
+.ai-bear .ai-ind { color: var(--color-danger); }
+.ai-neut { border-left-color: var(--color-primary); }
+.ai-neut .ai-ind { color: var(--color-primary); }
+.ai-warn { border-left-color: var(--color-warning); }
+.ai-warn .ai-ind { color: var(--color-warning); }
+
+/* Footer */
+.footer {
+  text-align: center;
+  margin-top: 20px;
+  padding: 16px;
+  font-size: 0.68em;
+  color: var(--color-text-dim);
+  line-height: 1.8;
+  border-top: 1px solid var(--color-border);
+}
+.footer a { color: var(--color-primary); text-decoration: none; transition: color var(--transition); }
+.footer a:hover { color: #6d8cff; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  body { padding: 10px 12px; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .seg-wrap { justify-content: flex-start; }
+  .seg-btn { padding: 6px 12px; font-size: 0.7em; }
+  .ctrl { padding: 8px 10px; gap: 6px; }
+  .tb-info { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .kpis { grid-template-columns: 1fr; }
+  .hdr h1 { font-size: 1.2em; }
+  .ctrl { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>European Day-Ahead Power Prices</h1>
+  <p>PE Analytics Dashboard &mdash; EPEX Spot &amp; Nord Pool &mdash; Source: Energy-Charts (Fraunhofer ISE) &mdash; CC BY 4.0</p>
+</div>
+
 <div class="ctrl">
-<label>Market:</label>
-<select id="mktSel" onchange="switchMarket()">
-<optgroup label="Western Europe">
-<option value="DE-LU" selected>Germany/Luxembourg (DE-LU)</option>
-<option value="FR">France (FR)</option>
-<option value="NL">Netherlands (NL)</option>
-<option value="BE">Belgium (BE)</option>
-<option value="AT">Austria (AT)</option>
-<option value="CH">Switzerland (CH)</option>
-</optgroup>
-<optgroup label="Nordics">
-<option value="DK1">Denmark West (DK1)</option>
-<option value="DK2">Denmark East (DK2)</option>
-<option value="NO1">Norway South (NO1)</option>
-<option value="NO2">Norway Central (NO2)</option>
-<option value="SE1">Sweden North (SE1)</option>
-<option value="SE2">Sweden Central (SE2)</option>
-<option value="SE3">Sweden South (SE3)</option>
-<option value="SE4">Sweden Malmö (SE4)</option>
-<option value="FI">Finland (FI)</option>
-</optgroup>
-<optgroup label="Iberian">
-<option value="ES">Spain (ES)</option>
-<option value="PT">Portugal (PT)</option>
-</optgroup>
-<optgroup label="Italy">
-<option value="IT-North">Italy North</option>
-<option value="IT-South">Italy South</option>
-</optgroup>
-<optgroup label="Central/Eastern">
-<option value="PL">Poland (PL)</option>
-<option value="CZ">Czech Republic (CZ)</option>
-<option value="HU">Hungary (HU)</option>
-<option value="SK">Slovakia (SK)</option>
-<option value="SI">Slovenia (SI)</option>
-<option value="HR">Croatia (HR)</option>
-<option value="RO">Romania (RO)</option>
-<option value="BG">Bulgaria (BG)</option>
-</optgroup>
-<optgroup label="Baltics">
-<option value="EE">Estonia (EE)</option>
-<option value="LV">Latvia (LV)</option>
-<option value="LT">Lithuania (LT)</option>
-</optgroup>
-<optgroup label="Other">
-<option value="GR">Greece (GR)</option>
-</optgroup>
-</select>
-<button onclick="loadToday()">Today</button>
-<button onclick="loadRange(30)">1M</button>
-<button onclick="loadRange(90)">3M</button>
-<button onclick="loadRange(180)">6M</button>
-<button onclick="loadRange(365)">1Y</button>
-<button onclick="loadRange(730)">2Y</button>
-<button onclick="loadRange(1095)">3Y</button>
-<button onclick="loadRange(1825)">5Y</button>
-<button onclick="loadRange(2555)">7Y</button>
-<button onclick="loadRange(3650)">10Y</button>
-<button onclick="loadRange(4380)">12Y</button>
-<button onclick="loadMaxRange()">Max</button>
-<span style="color:#444;margin:0 2px">|</span>
-<label>From:</label>
-<input type="date" id="startDate">
-<label>To:</label>
-<input type="date" id="endDate">
-<button onclick="loadCustomRange()">Go</button>
+  <label>Market:</label>
+  <div class="mkt-wrap">
+    <select id="mktSel" onchange="switchMarket()">
+      <optgroup label="Western Europe">
+        <option value="DE-LU" selected>Germany/Luxembourg (DE-LU)</option>
+        <option value="FR">France (FR)</option>
+        <option value="NL">Netherlands (NL)</option>
+        <option value="BE">Belgium (BE)</option>
+        <option value="AT">Austria (AT)</option>
+        <option value="CH">Switzerland (CH)</option>
+      </optgroup>
+      <optgroup label="Nordics">
+        <option value="DK1">Denmark West (DK1)</option>
+        <option value="DK2">Denmark East (DK2)</option>
+        <option value="NO1">Norway South (NO1)</option>
+        <option value="NO2">Norway Central (NO2)</option>
+        <option value="SE1">Sweden North (SE1)</option>
+        <option value="SE2">Sweden Central (SE2)</option>
+        <option value="SE3">Sweden South (SE3)</option>
+        <option value="SE4">Sweden Malmo (SE4)</option>
+        <option value="FI">Finland (FI)</option>
+      </optgroup>
+      <optgroup label="Iberian">
+        <option value="ES">Spain (ES)</option>
+        <option value="PT">Portugal (PT)</option>
+      </optgroup>
+      <optgroup label="Italy">
+        <option value="IT-North">Italy North</option>
+        <option value="IT-South">Italy South</option>
+      </optgroup>
+      <optgroup label="Central/Eastern">
+        <option value="PL">Poland (PL)</option>
+        <option value="CZ">Czech Republic (CZ)</option>
+        <option value="HU">Hungary (HU)</option>
+        <option value="SK">Slovakia (SK)</option>
+        <option value="SI">Slovenia (SI)</option>
+        <option value="HR">Croatia (HR)</option>
+        <option value="RO">Romania (RO)</option>
+        <option value="BG">Bulgaria (BG)</option>
+      </optgroup>
+      <optgroup label="Baltics">
+        <option value="EE">Estonia (EE)</option>
+        <option value="LV">Latvia (LV)</option>
+        <option value="LT">Lithuania (LT)</option>
+      </optgroup>
+      <optgroup label="Other">
+        <option value="GR">Greece (GR)</option>
+      </optgroup>
+    </select>
+  </div>
+  <span class="sep">|</span>
+  <div class="range-btns">
+    <button onclick="loadToday()">Today</button>
+    <button onclick="loadRange(7)">1W</button>
+    <button onclick="loadRange(30)">1M</button>
+    <button onclick="loadRange(90)">3M</button>
+    <button onclick="loadRange(180)">6M</button>
+    <button onclick="loadRange(365)">1Y</button>
+    <button onclick="loadRange(730)">2Y</button>
+    <button onclick="loadRange(1095)">3Y</button>
+    <button onclick="loadRange(1825)">5Y</button>
+    <button onclick="loadRange(2555)">7Y</button>
+    <button onclick="loadRange(3650)">10Y</button>
+    <button onclick="loadRange(4380)">12Y</button>
+    <button onclick="loadMaxRange()">Max</button>
+  </div>
+  <span class="sep">|</span>
+  <label>From:</label>
+  <input type="date" id="startDate">
+  <label>To:</label>
+  <input type="date" id="endDate">
+  <button onclick="loadCustomRange()">Go</button>
 </div>
+
 <div id="status"></div>
-<div class="tabs">
-<div class="tab active" onclick="showTab(0)">Summary</div>
-<div class="tab" onclick="showTab(1)">BESS Economics</div>
-<div class="tab" onclick="showTab(2)">Spread Duration</div>
-<div class="tab" onclick="showTab(3)">Price Structure</div>
-<div class="tab" onclick="showTab(4)">Volatility &amp; Risk</div>
-<div class="tab" onclick="showTab(5)">Daily Profiles</div>
-<div class="tab" onclick="showTab(6)">Heatmap</div>
-<div class="tab" onclick="showTab(7)">TB Spreads</div>
+<div class="loader" id="loader"><div class="spin"></div><span>Loading data...</span></div>
+
+<div class="seg-wrap">
+  <div class="seg-control" id="segControl">
+    <div class="seg-indicator" id="segIndicator"></div>
+    <button class="seg-btn active" onclick="showTab(0)">Summary</button>
+    <button class="seg-btn" onclick="showTab(1)">BESS Economics</button>
+    <button class="seg-btn" onclick="showTab(2)">Spread Duration</button>
+    <button class="seg-btn" onclick="showTab(3)">Price Structure</button>
+    <button class="seg-btn" onclick="showTab(4)">Volatility &amp; Risk</button>
+    <button class="seg-btn" onclick="showTab(5)">Daily Profiles</button>
+    <button class="seg-btn" onclick="showTab(6)">Heatmap</button>
+    <button class="seg-btn" onclick="showTab(7)">TB Spreads</button>
+  </div>
 </div>
+
+<!-- Tab 0: Summary -->
 <div class="panel active" id="p0">
-<div class="kpis" id="kpiRow"></div>
-<canvas id="c0" height="220"></canvas>
-<div class="cnote">Rolling BESS revenue estimate (daily spread x 88% RTE, 1 cycle/day)</div>
-<div class="mtbl" id="monthlyTbl"></div>
-<div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Day-ahead hourly prices from Energy-Charts API (Fraunhofer ISE), sourced from EPEX Spot / Nord Pool. Endpoint: <code>api.energy-charts.info/price?bzn={market}</code>. Data updates daily after the EPEX day-ahead auction (~12:45 CET). Resolution: 15-min or 60-min depending on bidding zone. License: CC BY 4.0.</div><div class="fn-section"><span class="fn-icon">σ</span> <b>Calculations:</b> <em>KPI cards —</em> Avg Price (7d) = 7-day simple moving average of daily mean prices. Avg Spread (7d) = 7d SMA of daily (max−min). BESS Revenue = spread × 0.88 RTE, 1 cycle/day. Neg Hours = hours with price &lt; €0. Volatility σ = intraday sample std deviation. Solar Cannibalisation Index = avg price 10–14h ÷ avg price 24h (values &lt;1.0 mean solar depresses midday prices below the daily average). Peak/Off-Peak Ratio = avg 08–20h ÷ avg 20–08h. Percentage changes compare the last 7 days vs the prior 7 days. <em>Chart —</em> Rolling BESS revenue with 7d (green) and 30d (white) moving averages. <em>Monthly table —</em> Arithmetic averages of each metric grouped by calendar month.</div><div class="fn-section"><span class="fn-icon">☀</span> <b>Solar Asset Owner:</b> Focus on Solar Cannibalisation Index (values &lt;1.0 mean your midday output earns below market average — the lower the worse), Negative Hours (direct revenue destruction for uncontracted solar), and Avg Price trend (your top-line revenue driver). A rising index or falling negative hours signals improving captured prices. The monthly table lets you compare seasonal patterns — spring/summer typically shows the worst cannibalisation as solar output peaks.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> Focus on BESS Revenue (7d) for operational trend, Cumulative BESS Revenue for total performance tracking, Avg Spread for the fundamental revenue driver, and Volatility σ as a leading indicator of spread opportunity. The rolling BESS revenue chart is your headline P&amp;L proxy. The monthly table benchmarks performance across months to identify seasonality in your revenue — typically higher in winter (demand-driven spreads) and summer (solar-driven midday troughs). Watch the spread trend — if compressing, investigate whether new storage capacity or interconnector flows are eroding arbitrage.</div></div>
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportCSV(0)" title="Download CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
+    <button class="export-btn" onclick="exportPNG(0)" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> PNG</button>
+  </div>
+  <div class="kpis" id="kpiRow"></div>
+  <canvas id="c0" height="220"></canvas>
+  <div class="cnote">Rolling BESS revenue estimate (daily spread x 88% RTE, 1 cycle/day)</div>
+  <div class="mtbl" id="monthlyTbl"></div>
+  <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Day-ahead hourly prices from Energy-Charts API (Fraunhofer ISE), sourced from EPEX Spot / Nord Pool. Endpoint: <code>api.energy-charts.info/price?bzn={market}</code>. Data updates daily after the EPEX day-ahead auction (~12:45 CET). Resolution: 15-min or 60-min depending on bidding zone. License: CC BY 4.0.</div><div class="fn-section"><span class="fn-icon">&sigma;</span> <b>Calculations:</b> <em>KPI cards</em> &mdash; Avg Price (7d) = 7-day simple moving average of daily mean prices. Avg Spread (7d) = 7d SMA of daily (max-min). BESS Revenue = spread x 0.88 RTE, 1 cycle/day. Neg Hours = hours with price &lt; &euro;0. Volatility &sigma; = intraday sample std deviation. Solar Cannibalisation Index = avg price 10-14h / avg price 24h. Peak/Off-Peak Ratio = avg 08-20h / avg 20-08h.</div><div class="fn-section"><span class="fn-icon">&#9728;</span> <b>Solar Asset Owner:</b> Focus on Solar Cannibalisation Index, Negative Hours, and Avg Price trend.</div><div class="fn-section"><span class="fn-icon">&#128267;</span> <b>BESS Asset Owner:</b> Focus on BESS Revenue (7d), Cumulative BESS Revenue, Avg Spread, and Volatility &sigma;.</div></div>
 </div>
+
+<!-- Tab 1: BESS Economics -->
 <div class="panel" id="p1">
-<div class="cnote">Theoretical 1-cycle arbitrage: daily (max-min) spread x 88% round-trip efficiency. Actual dispatch typically captures 60-80% of theoretical spread.</div>
-<canvas id="c1" height="400"></canvas>
-<div class="sub-title">Average Revenue by Day of Week</div>
-<div class="dow-row" id="dowRow"></div>
-<div class="tbl" id="tbl1"></div>
-<div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Day-ahead hourly prices from Energy-Charts API (Fraunhofer ISE), sourced from EPEX Spot / Nord Pool. Endpoint: <code>api.energy-charts.info/price?bzn={market}</code>. License: CC BY 4.0.</div><div class="fn-section"><span class="fn-icon">σ</span> <b>Calculations:</b> <em>Daily BESS Revenue</em> = (max price − min price) × 88% round-trip efficiency (RTE). This assumes 1 charge/discharge cycle per day buying at the daily low and selling at the daily high. Real-world dispatch typically captures 60–80% of this theoretical maximum due to imperfect foresight and ramp constraints. 7d and 30d lines are simple moving averages. Bars coloured red when revenue exceeds 2.5× the period average (spike days). <em>Cumulative revenue</em> is the running sum of daily BESS revenue over the period. <em>Day-of-week</em> bars show average BESS revenue grouped by weekday vs weekend. The table is sorted by highest BESS revenue day first.</div><div class="fn-section"><span class="fn-icon">☀</span> <b>Solar Asset Owner:</b> While primarily a BESS chart, solar asset owners with co-located storage should use this to benchmark expected storage revenue against standalone solar merchant income. Compare cumulative BESS revenue growth rate to your solar capture rate — if BESS economics are strong, adding storage to your solar site may significantly improve project IRR. High-revenue spike days often coincide with low-solar / high-demand periods (cold snaps, low wind), confirming the diversification value of hybrid assets.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> This is your core revenue tracker. Watch the 7d MA trend for operational signals and the 30d MA for structural trends. A declining 30d MA warrants investigating whether spread compression is temporary (seasonal) or structural (new storage capacity entering the market). The day-of-week chart reveals weekday/weekend patterns — lower weekend revenue is typical due to reduced demand, and helps with maintenance scheduling. The cumulative line should show a consistent upward slope; flattening periods indicate challenging revenue windows. Use the table to identify best-revenue days and correlate with market events (cold spells, plant outages, low renewables).</div></div>
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportCSV(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
+    <button class="export-btn" onclick="exportPNG(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> PNG</button>
+  </div>
+  <div class="cnote">Theoretical 1-cycle arbitrage: daily (max-min) spread x 88% round-trip efficiency. Actual dispatch typically captures 60-80% of theoretical spread.</div>
+  <canvas id="c1" height="400"></canvas>
+  <div class="sub-title">Average Revenue by Day of Week</div>
+  <div class="dow-row" id="dowRow"></div>
+  <div class="tbl" id="tbl1"></div>
+  <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Day-ahead hourly prices from Energy-Charts API (Fraunhofer ISE). License: CC BY 4.0.</div><div class="fn-section"><span class="fn-icon">&sigma;</span> <b>Calculations:</b> Daily BESS Revenue = (max - min) x 88% RTE. 7d and 30d lines are simple moving averages. Red bars: revenue exceeds 2.5x period average.</div></div>
 </div>
+
+<!-- Tab 2: Spread Duration -->
 <div class="panel" id="p2">
-<div class="cnote">Revenue duration curve — shows what percentage of days achieve a given spread level</div>
-<canvas id="c2" height="380"></canvas>
-<div id="spreadStats" style="text-align:center;font-size:.75em;color:#aaa;margin-top:6px"></div>
-<div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Day-ahead hourly prices from Energy-Charts API (Fraunhofer ISE), sourced from EPEX Spot / Nord Pool. Endpoint: <code>api.energy-charts.info/price?bzn={market}</code>. License: CC BY 4.0.</div><div class="fn-section"><span class="fn-icon">σ</span> <b>Calculations:</b> Daily spread = max price − min price across all intraday intervals. Spreads are sorted descending and plotted as a duration curve (x-axis = % of days achieving ≥ that spread). P50 (median) = spread exceeded on 50% of days. P90 = spread exceeded on only 10% of days. The mean line is the arithmetic average of all daily spreads. Threshold lines at €50/100/200/300 provide quick benchmarks.</div><div class="fn-section"><span class="fn-icon">☀</span> <b>Solar Asset Owner:</b> Not a primary chart for solar, but the spread duration curve indicates market volatility structure. Higher spreads imply more volatile pricing environments which increase the value of flexibility (co-located storage). If your solar asset has a battery, the P50 spread is a reasonable baseline for expected daily arbitrage — use this to validate storage business cases.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> This is your revenue probability distribution. The P50 spread × RTE (88%) gives you the median daily revenue per MW per cycle. Use P90 for conservative financial modelling (bankable case). The steeper the curve, the higher the upside from high-spread days. Track how the shape evolves over time: a flattening curve (lower P10, stable P50) signals declining peak-day opportunities, while a steepening curve indicates growing optionality value.</div></div>
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportCSV(2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
+    <button class="export-btn" onclick="exportPNG(2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> PNG</button>
+  </div>
+  <div class="cnote">Revenue duration curve &mdash; shows what percentage of days achieve a given spread level</div>
+  <canvas id="c2" height="380"></canvas>
+  <div id="spreadStats" style="text-align:center;font-size:.75em;color:var(--color-text-muted);margin-top:8px"></div>
+  <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Calculations:</b> Daily spread = max - min. Sorted descending as duration curve. P50 = median, P90 = spread exceeded on 10% of days.</div></div>
 </div>
+
+<!-- Tab 3: Price Structure -->
 <div class="panel" id="p3">
-<div class="legend" id="leg3"></div>
-<canvas id="c3" height="420"></canvas>
-<div class="cnote">Solar cannibalisation index = midday (10-14h) avg / baseload (24h) avg. Values below 1.0 indicate solar-driven price depression.</div>
-<div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Day-ahead hourly prices from Energy-Charts API (Fraunhofer ISE), sourced from EPEX Spot / Nord Pool. Endpoint: <code>api.energy-charts.info/price?bzn={market}</code>. License: CC BY 4.0.</div><div class="fn-section"><span class="fn-icon">σ</span> <b>Calculations:</b> <em>Top chart —</em> Daily average price = mean of all intraday intervals. 7d and 30d lines are simple moving averages. <em>Bottom chart —</em> Peak avg = mean price hours 08–20h. Off-peak avg = mean price hours 20–08h. Solar avg = mean price hours 10–14h. All three are plotted as 7-day rolling averages. The Solar Cannibalisation Index (shown in Summary KPIs) = solar avg (10–14h) ÷ baseload avg (full 24h). Values below 1.0 confirm that solar generation is depressing midday prices below the daily average.</div><div class="fn-section"><span class="fn-icon">☀</span> <b>Solar Asset Owner:</b> This is your most critical chart. The gap between the solar line (yellow) and the peak/baseload lines directly measures your revenue discount vs the market average. A declining solar cannibalisation index means your captured price per MWh is falling faster than the market. If solar avg consistently sits below off-peak avg, your unhedged asset earns less than even off-peak generators. Monitor the trend — a stabilising or rising index suggests the market is absorbing solar supply (demand growth, storage, exports).</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> The peak-to-off-peak spread is the structural driver of daily arbitrage. A widening gap between the red (peak) and blue (off-peak) lines signals improving fundamentals for BESS revenue. Also track the solar line — as solar pushes midday prices lower, the optimal BESS charge window shifts to align with solar hours, improving economics. If all three lines converge, the arbitrage opportunity is compressing.</div></div>
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportCSV(3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
+    <button class="export-btn" onclick="exportPNG(3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> PNG</button>
+  </div>
+  <div class="legend" id="leg3"></div>
+  <canvas id="c3" height="420"></canvas>
+  <div class="cnote">Solar cannibalisation index = midday (10-14h) avg / baseload (24h) avg. Values below 1.0 indicate solar-driven price depression.</div>
+  <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Calculations:</b> Peak avg = mean 08-20h. Off-peak avg = mean 20-08h. Solar avg = mean 10-14h. All plotted as 7-day rolling averages.</div></div>
 </div>
+
+<!-- Tab 4: Volatility & Risk -->
 <div class="panel" id="p4">
-<canvas id="c4" height="420"></canvas>
-<div id="volStats" style="text-align:center;font-size:.75em;color:#aaa;margin-top:6px"></div>
-<div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Day-ahead hourly prices from Energy-Charts API (Fraunhofer ISE), sourced from EPEX Spot / Nord Pool. Endpoint: <code>api.energy-charts.info/price?bzn={market}</code>. License: CC BY 4.0.</div><div class="fn-section"><span class="fn-icon">σ</span> <b>Calculations:</b> <em>Top chart —</em> Daily volatility (σ) = sample standard deviation of all intraday price intervals for that day, expressed in €/MWh. The 7-day rolling line is a simple moving average of daily σ. Red dots flag days where σ exceeds mean + 2 standard deviations (statistical outliers). <em>Bottom chart —</em> Negative hours/day = count of intervals with price &lt; €0, converted to hours. The purple bars show raw daily values; the line is a 7-day rolling average. Summary stats include total negative hours, % of days affected, and the average depth (€/MWh) when prices go negative.</div><div class="fn-section"><span class="fn-icon">☀</span> <b>Solar Asset Owner:</b> Rising negative-price hours signal increasing solar cannibalisation and direct revenue erosion for uncontracted assets (you may be paying to produce). Monitor the depth — if average negative price deepens, curtailment losses grow. Seasonal negative-hour spikes (spring/summer) indicate periods where PPAs with floor prices or curtailment clauses become critical. High σ days can offer upside if you have flexibility (e.g., co-located storage) but represent pure risk for fixed-profile generators.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> High volatility = high arbitrage opportunity. Spikes in σ directly correlate with wider spreads and higher daily BESS revenue. Rising negative hours are beneficial for BESS — charging at negative prices (getting paid to charge) and discharging at peak creates exceptional round-trip margins. Track whether volatility is trending up (bullish for BESS economics) or compressing (bearish). Red outlier dots mark the best revenue days to benchmark against.</div></div>
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportCSV(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
+    <button class="export-btn" onclick="exportPNG(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> PNG</button>
+  </div>
+  <canvas id="c4" height="420"></canvas>
+  <div id="volStats" style="text-align:center;font-size:.75em;color:var(--color-text-muted);margin-top:8px"></div>
+  <div class="footnote"><div class="fn-section"><span class="fn-icon">&sigma;</span> <b>Calculations:</b> Daily &sigma; = sample std deviation of intraday prices. Red dots = outlier days (&gt;2&sigma; from mean). Negative hours = intervals with price &lt; &euro;0.</div></div>
 </div>
+
+<!-- Tab 5: Daily Profiles (raw canvas) -->
 <div class="panel" id="p5">
-<div class="hl-row">
-<label>Highlight from:</label>
-<input type="date" id="hlDate" value="2026-03-03">
-<button onclick="setHlOffset(1)">1D</button>
-<button onclick="setHlOffset(7)">1W</button>
-<button onclick="setHlOffset(30)">1M</button>
-<button onclick="setHlOffset(60)">2M</button>
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportPNG(5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> PNG</button>
+  </div>
+  <div class="hl-row">
+    <label>Highlight from:</label>
+    <input type="date" id="hlDate" value="2026-03-03">
+    <button onclick="setHlOffset(1)">1D</button>
+    <button onclick="setHlOffset(7)">1W</button>
+    <button onclick="setHlOffset(30)">1M</button>
+    <button onclick="setHlOffset(60)">2M</button>
+  </div>
+  <div class="slider-row">
+    <label id="sliderMin"></label>
+    <input type="range" id="hlSlider" min="0" max="100" value="50" oninput="onSliderChange()">
+    <label id="sliderMax"></label>
+  </div>
+  <div class="legend" id="leg5"></div>
+  <canvas id="c5" height="400"></canvas>
+  <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data:</b> Raw intraday prices per day plotted hour 0-24. Highlight splits overlay into two colour groups.</div></div>
 </div>
-<div class="slider-row">
-<label id="sliderMin"></label>
-<input type="range" id="hlSlider" min="0" max="100" value="50" oninput="onSliderChange()">
-<label id="sliderMax"></label>
-</div>
-<div class="legend" id="leg5"></div>
-<canvas id="c5" height="400"></canvas>
-<div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Intraday 15-min/60-min day-ahead prices from Energy-Charts API (Fraunhofer ISE), sourced from EPEX Spot / Nord Pool. Each line is one calendar day plotted hour 0–24.</div><div class="fn-section"><span class="fn-icon">σ</span> <b>Calculations:</b> No transformation — raw price values (€/MWh) are plotted per interval for each day. The highlight date splits the overlay into two colour groups to compare recent vs historical profiles.</div><div class="fn-section"><span class="fn-icon">☀</span> <b>Solar Asset Owner:</b> Look for a consistent midday dip (duck curve shape) — this confirms solar cannibalisation. Compare whether the dip is deepening over time (red lines lower at midday than blue). If midday prices frequently go negative, uncontracted solar assets face revenue risk. A flattening profile may indicate demand growth or storage absorbing solar supply.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> Identify the optimal charge window (lowest price cluster, usually midday or overnight) and discharge window (highest price cluster, usually evening ramp 17–20h). Days where profiles have sharp peaks and troughs represent the best arbitrage days. If the spread between charge and discharge windows is narrowing over time, BESS revenue expectations may need adjustment.</div></div>
-</div>
+
+<!-- Tab 6: Heatmap (raw canvas) -->
 <div class="panel" id="p6">
-<canvas id="c6" height="400"></canvas>
-<div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Data Source:</b> Hourly day-ahead auction prices from Energy-Charts API (Fraunhofer ISE), sourced from EPEX Spot / Nord Pool. Endpoint: <code>api.energy-charts.info/price?bzn={market}</code>. Resolution: 15-min or 60-min depending on market. License: CC BY 4.0.</div><div class="fn-section"><span class="fn-icon">σ</span> <b>Calculations:</b> Each cell maps one hour of one day to its day-ahead price (€/MWh). The colour gradient is a linear interpolation between the global min (cool blue) and global max (warm red) across the entire loaded date range.</div><div class="fn-section"><span class="fn-icon">☀</span> <b>Solar Asset Owner:</b> Look for consistent midday (10–14h) blue/cool bands — these indicate solar cannibalisation driving prices down during peak generation hours. Seasonal patterns reveal when solar output saturates the market. Weekend vs weekday colour shifts show demand-driven dynamics.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> Look for strong daily colour contrast (dark blue and bright red in the same row) — this signals high intraday spread and arbitrage opportunity. Days with uniformly flat colours indicate low spread and poor BESS economics. Identify hours that consistently show extreme colours to optimise charge/discharge scheduling.</div></div>
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportPNG(6)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> PNG</button>
+  </div>
+  <canvas id="c6" height="400"></canvas>
+  <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>Heatmap:</b> Each cell = one hour of one day. Colour gradient from global min (cool) to max (warm).</div></div>
 </div>
+
+<!-- Tab 7: TB Spreads -->
 <div class="panel" id="p7">
-<div class="tb-info">
-<div class="tb-card"><h4>TB1 — 1-Hour Battery</h4><p>Highest hourly price − Lowest hourly price. Max revenue from one optimal charge/discharge cycle. Most sensitive to single-hour price spikes.</p></div>
-<div class="tb-card"><h4>TB2 — Conservative Signal</h4><p>2nd highest − 2nd lowest price. Strips out outlier hours. Better proxy for repeatable, achievable battery revenue.</p></div>
-<div class="tb-card"><h4>TB4 — 4-Hour Battery</h4><p>Σ(4 highest) − Σ(4 lowest prices). Max revenue across four cycles. Captures full daily spread value for larger storage assets.</p></div>
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportCSV(7)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
+    <button class="export-btn" onclick="exportPNG(7)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> PNG</button>
+  </div>
+  <div class="tb-info">
+    <div class="tb-card"><h4>TB1 &mdash; 1-Hour Battery</h4><p>Highest hourly price - Lowest hourly price. Max revenue from one optimal charge/discharge cycle.</p></div>
+    <div class="tb-card"><h4>TB2 &mdash; Conservative Signal</h4><p>2nd highest - 2nd lowest price. Strips out outlier hours. Better proxy for repeatable revenue.</p></div>
+    <div class="tb-card"><h4>TB4 &mdash; 4-Hour Battery</h4><p>&Sigma;(4 highest) - &Sigma;(4 lowest prices). Max revenue across four cycles.</p></div>
+  </div>
+  <div class="tb-kpis" id="tbKpis"></div>
+  <div class="sub-title">24-Hour Price Profile &mdash; Latest Day</div>
+  <canvas id="c7a" height="200"></canvas>
+  <div class="sub-title">TB Spread Trend &mdash; 7-Day Rolling Average</div>
+  <div class="tb-toggle" id="tbToggle">
+    <button class="active" onclick="setTbView(0)">TB1</button>
+    <button onclick="setTbView(1)">TB2</button>
+    <button onclick="setTbView(2)">TB4</button>
+    <button onclick="setTbView(3)">All</button>
+  </div>
+  <canvas id="c7b" height="260"></canvas>
+  <div class="sub-title">Daily TB Spread Table</div>
+  <div class="tbl" id="tbl7"></div>
+  <div class="sub-title">18-Month TB Trend &mdash; TB1 &amp; TB4 Dual Axis</div>
+  <canvas id="c7c" height="280"></canvas>
+  <div class="sub-title">Long-Run TB Spreads &mdash; Annual Regime Bands</div>
+  <canvas id="c7d" height="300"></canvas>
+  <div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>TB Spread Framework:</b> TB1 = max-min (single best cycle). TB2 = 2nd highest - 2nd lowest (strips outliers). TB4 = sum of 4 highest - sum of 4 lowest hourly prices. All values in &euro;/MWh.</div></div>
 </div>
-<div class="tb-kpis" id="tbKpis"></div>
-<div class="sub-title">24-Hour Price Profile — Latest Day</div>
-<canvas id="c7a" height="200"></canvas>
-<div class="sub-title">TB Spread Trend — 7-Day Rolling Average</div>
-<div class="tb-toggle" id="tbToggle">
-<button class="active" onclick="setTbView(0)">TB1</button>
-<button onclick="setTbView(1)">TB2</button>
-<button onclick="setTbView(2)">TB4</button>
-<button onclick="setTbView(3)">All</button>
-</div>
-<canvas id="c7b" height="260"></canvas>
-<div class="sub-title">Daily TB Spread Table</div>
-<div class="tbl" id="tbl7"></div>
-<div class="sub-title">18-Month TB Trend — TB1 &amp; TB4 Dual Axis</div>
-<canvas id="c7c" height="280"></canvas>
-<div class="sub-title">Long-Run TB Spreads — Annual Regime Bands</div>
-<canvas id="c7d" height="300"></canvas>
-<div class="footnote"><div class="fn-section"><span class="fn-icon">i</span> <b>TB Spread Framework:</b> Trading Block spreads measure intraday price volatility from a battery storage perspective. TB1 = max−min (single best cycle). TB2 = 2nd highest − 2nd lowest (strips outliers). TB4 = sum of 4 highest − sum of 4 lowest hourly prices (4-hour storage benchmark). All values in €/MWh.</div><div class="fn-section"><span class="fn-icon">🔋</span> <b>BESS Asset Owner:</b> TB1 is the theoretical maximum single-cycle revenue. TB2 provides a more conservative, repeatable estimate. TB4 captures the full-day spread opportunity for 4-hour duration assets. Compare TB1 vs TB2 to assess how much revenue depends on outlier hours — a large gap signals spike-dependent markets.</div></div>
-</div>
+
 <div id="aibox"></div>
-<div class="footer">Data: <a href="https://energy-charts.info">energy-charts.info</a> (Fraunhofer ISE) | Historical data available from 2011 | Updates daily after EPEX auction ~12:45 CET<br>Assumptions: BESS RTE 88%, 1 cycle/day. Solar hours: 10-14h. Peak: 08-20h.</div>
+
+<div class="footer">
+  Data: <a href="https://energy-charts.info">energy-charts.info</a> (Fraunhofer ISE) &mdash; Historical data available from 2011 &mdash; Updates daily after EPEX auction ~12:45 CET<br>
+  Assumptions: BESS RTE 88%, 1 cycle/day &mdash; Solar hours: 10-14h &mdash; Peak: 08-20h
+</div>
+
 <script>
+/* ===== CORE DATA STRUCTURES ===== */
 var allPrices=[],startTs=0,interval=900;
 var days={},dayKeys=[],activeTab=0,currentBzn="DE-LU";
 var A={};
 var RTE=0.88;
 
+/* ===== UTILITY FUNCTIONS ===== */
 function aMax(a){var m=-Infinity;for(var i=0;i<a.length;i++)if(a[i]!==null&&a[i]>m)m=a[i];return m===-Infinity?0:m}
 function aMin(a){var m=Infinity;for(var i=0;i<a.length;i++)if(a[i]!==null&&a[i]<m)m=a[i];return m===Infinity?0:m}
 function aAvg(a){var s=0,c=0;for(var i=0;i<a.length;i++)if(a[i]!==null){s+=a[i];c++}return c?s/c:0}
@@ -265,11 +776,13 @@ function sparkSVG(data,color){
 if(!data||data.length<2)return"";
 var mn=aMin(data),mx=aMax(data);
 if(mx===mn){mn-=1;mx+=1}
+var id="sp"+Math.random().toString(36).substr(2,6);
 var pts=[];for(var i=0;i<data.length;i++){
-pts.push(Math.round(i/(data.length-1)*100)+","+Math.round((1-(data[i]-mn)/(mx-mn))*26+1));}
-return'<svg viewBox="0 0 100 28" class="spark" preserveAspectRatio="none"><polyline points="'+pts.join(" ")+'" stroke="'+color+'" fill="none" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>';
+pts.push(Math.round(i/(data.length-1)*100)+","+Math.round((1-(data[i]-mn)/(mx-mn))*28+2));}
+return'<svg viewBox="0 0 100 32" class="spark" preserveAspectRatio="none"><defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0"/></linearGradient></defs><path d="M0,32 L'+pts.join(" L")+' L100,32 Z" fill="url(#'+id+')"/><polyline points="'+pts.join(" ")+'" stroke="'+color+'" fill="none" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>';
 }
 
+/* ===== ANALYTICS ENGINE ===== */
 function computeAnalytics(){
 var ds=[];
 for(var di=0;di<dayKeys.length;di++){
@@ -324,18 +837,19 @@ var recent=0,prior=0;for(var i=n-w;i<n;i++)recent+=arr[i][field];
 for(var i=n-w*2;i<n-w;i++)prior+=arr[i][field];
 recent/=w;prior/=w;if(Math.abs(prior)<0.01)return null;return(recent-prior)/Math.abs(prior)*100}
 
+/* ===== CANVAS HELPERS (for tabs 5,6 and fallback) ===== */
 function clearCanvas(id,h){var c=document.getElementById(id);var r=c.getBoundingClientRect();
 c.width=r.width*2;c.height=(h||r.height)*2;var ctx=c.getContext("2d");ctx.scale(2,2);
 ctx.clearRect(0,0,r.width,h||r.height);return{ctx:ctx,w:r.width,h:h||r.height}}
 
 function drawAxes(ctx,w,h,pad,yMin,yMax,xLabels,rightLabel){
-ctx.strokeStyle="#333";ctx.lineWidth=0.5;
+ctx.strokeStyle="#222";ctx.lineWidth=0.5;
 ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();
-ctx.fillStyle="#888";ctx.font="9px sans-serif";var steps=5;
+ctx.fillStyle="var(--color-text-muted)";ctx.font="9px Inter,sans-serif";var steps=5;
 for(var i=0;i<=steps;i++){var y=pad.t+i*(h-pad.t-pad.b)/steps;var val=yMax-(yMax-yMin)*i/steps;
-ctx.textAlign="right";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.textAlign="right";ctx.fillStyle="#888";ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
-if(xLabels){ctx.textAlign="center";for(var i=0;i<xLabels.length;i++)ctx.fillText(xLabels[i][0],xLabels[i][1],h-pad.b+12)}
+if(xLabels){ctx.textAlign="center";ctx.fillStyle="#888";for(var i=0;i<xLabels.length;i++)ctx.fillText(xLabels[i][0],xLabels[i][1],h-pad.b+12)}
 if(rightLabel){ctx.fillStyle="#666";ctx.textAlign="left";ctx.fillText(rightLabel,pad.l+4,pad.t-4)}}
 
 function yPos(val,yMin,yMax,h,pad){return pad.t+(1-(val-yMin)/(yMax-yMin))*(h-pad.t-pad.b)}
@@ -351,7 +865,7 @@ function xDayLabels(pad,pW,h,dayArr,ctx){
 var nDays=dayArr.length;var step=Math.max(1,Math.ceil(nDays/12));
 for(var i=0;i<nDays;i+=step){var x=pad.l+(i+0.5)/nDays*pW;
 ctx.save();ctx.translate(x,h-pad.b+8);ctx.rotate(-0.5);
-ctx.fillStyle="#888";ctx.font="8px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="8px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText(fmtDateLabel(dayArr[i],nDays),0,0);ctx.restore()}}
 
 /* ===== TAB 0: SUMMARY ===== */
@@ -381,14 +895,14 @@ var vals7=A.rollBess7,vals30=A.rollBess30;
 var yMax=Math.max(aMax(vals7),aMax(vals30))*1.1;if(yMax<10)yMax=10;
 drawAxes(ctx,w,h,pad,0,yMax,null,"\u20AC/MW/day");
 xDayLabels(pad,pW,h,dayKeys,ctx);
-ctx.fillStyle="rgba(74,108,247,0.1)";ctx.beginPath();ctx.moveTo(pad.l,h-pad.b);
+ctx.fillStyle="rgba(74,108,247,0.08)";ctx.beginPath();ctx.moveTo(pad.l,h-pad.b);
 for(var i=0;i<vals30.length;i++){var x=pad.l+(i+0.5)/vals30.length*pW;ctx.lineTo(x,yPos(vals30[i],0,yMax,h,pad))}
 ctx.lineTo(pad.l+(vals30.length-0.5)/vals30.length*pW,h-pad.b);ctx.closePath();ctx.fill();
 function drawLine(arr,color,width){ctx.strokeStyle=color;ctx.lineWidth=width||1.5;ctx.beginPath();
 for(var i=0;i<arr.length;i++){var x=pad.l+(i+0.5)/arr.length*pW;var y=yPos(arr[i],0,yMax,h,pad);
 if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
-drawLine(vals30,"rgba(255,255,255,0.5)",1);drawLine(vals7,"#22c55e",1.5);
-ctx.fillStyle="#888";ctx.font="8px sans-serif";ctx.textAlign="right";
+drawLine(vals30,"rgba(255,255,255,0.4)",1);drawLine(vals7,"#22c55e",1.5);
+ctx.fillStyle="#888";ctx.font="8px Inter,sans-serif";ctx.textAlign="right";
 ctx.fillText("7d MA",w-pad.r-2,pad.t+12);ctx.fillStyle="#22c55e";ctx.fillText("\u25CF",w-pad.r-36,pad.t+12);
 ctx.fillStyle="#888";ctx.fillText("30d MA",w-pad.r-2,pad.t+22);ctx.fillStyle="rgba(255,255,255,0.5)";ctx.fillText("\u25CF",w-pad.r-42,pad.t+22);
 buildMonthlyTable()}
@@ -419,34 +933,34 @@ var ds=A.daily,n=ds.length;var r=clearCanvas("c1",400);var ctx=r.ctx,w=r.w,h=r.h
 var topH=h*0.55;var pad={t:20,r:55,b:5,l:50};var pW=w-pad.l-pad.r;
 var revs=ds.map(function(d){return d.bessRev});
 var yMax=aMax(revs)*1.15;if(yMax<10)yMax=10;var bW=Math.max(2,pW/n-1);
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("Daily BESS Revenue (\u20AC/MW/day)",pad.l,pad.t-4);
 for(var i=0;i<=4;i++){var y=pad.t+i*(topH-pad.t-pad.b)/4;var val=yMax-(yMax)*i/4;
-ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px Inter,sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
 var avgRev=aAvg(revs);
 for(var i=0;i<n;i++){var x=pad.l+(i+0.5)/n*pW-bW/2;var bH=(revs[i]/yMax)*(topH-pad.t-pad.b);var y=topH-pad.b-bH;
 if(revs[i]>avgRev*2.5)ctx.fillStyle="#ef4444";
 else if(revs[i]>avgRev*1.5)ctx.fillStyle="rgba(239,68,68,0.6)";
-else ctx.fillStyle="rgba(74,108,247,0.55)";ctx.fillRect(x,y,bW,bH)}
+else ctx.fillStyle="rgba(74,108,247,0.45)";ctx.fillRect(x,y,bW,bH)}
 function drawMAL(arr,color,lw){ctx.strokeStyle=color;ctx.lineWidth=lw||1.5;ctx.beginPath();
 for(var i=0;i<arr.length;i++){var x=pad.l+(i+0.5)/arr.length*pW;
 var y=pad.t+(1-(arr[i]/yMax))*(topH-pad.t-pad.b);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
-drawMAL(A.rollBess30,"rgba(255,255,255,0.6)",1);drawMAL(A.rollBess7,"#eab308",1.5);
-ctx.fillStyle="#eab308";ctx.font="8px sans-serif";ctx.textAlign="right";
+drawMAL(A.rollBess30,"rgba(255,255,255,0.5)",1);drawMAL(A.rollBess7,"#eab308",1.5);
+ctx.fillStyle="#eab308";ctx.font="8px Inter,sans-serif";ctx.textAlign="right";
 ctx.fillText("\u25CF 7d MA",w-pad.r,pad.t+8);
 ctx.fillStyle="rgba(255,255,255,0.6)";ctx.fillText("\u25CF 30d MA",w-pad.r,pad.t+18);
 ctx.fillStyle="#ef4444";ctx.fillText("\u25CF >2.5x avg",w-pad.r,pad.t+28);
 xDayLabels({t:pad.t,r:pad.r,b:5,l:pad.l},pW,topH+18,dayKeys,ctx);
 
 var botY=topH+30;var botH=h-botY-10;
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("Cumulative BESS Revenue (\u20AC/MW)",pad.l,botY-4);
 var cumMax=aMax(A.cumBess)*1.1;if(cumMax<10)cumMax=10;
 for(var i=0;i<=3;i++){var y=botY+i*botH/3;var val=cumMax-(cumMax)*i/3;
-ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px Inter,sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
-ctx.fillStyle="rgba(6,182,212,0.08)";ctx.beginPath();ctx.moveTo(pad.l,botY+botH);
+ctx.fillStyle="rgba(6,182,212,0.06)";ctx.beginPath();ctx.moveTo(pad.l,botY+botH);
 for(var i=0;i<A.cumBess.length;i++){var x=pad.l+(i+0.5)/A.cumBess.length*pW;
 var y=botY+(1-(A.cumBess[i]/cumMax))*botH;ctx.lineTo(x,y)}
 ctx.lineTo(pad.l+(A.cumBess.length-0.5)/A.cumBess.length*pW,botY+botH);ctx.closePath();ctx.fill();
@@ -462,7 +976,7 @@ var dowAvg=[];for(var i=0;i<7;i++)dowAvg.push(dowCnt[i]?dowData[i]/dowCnt[i]:0);
 var dowMax=aMax(dowAvg);if(dowMax<1)dowMax=1;
 for(var i=0;i<7;i++){var d=document.createElement("div");d.className="dow-bar";
 var barH=Math.round(dowAvg[i]/dowMax*60);
-d.innerHTML='<div class="dv">\u20AC'+Math.round(dowAvg[i])+'</div><div class="db" style="height:'+barH+'px;background:'+(i===0||i===6?"#666":"#4a6cf7")+'"></div><div class="dl">'+dowNames[i]+'</div>';
+d.innerHTML='<div class="dv">\u20AC'+Math.round(dowAvg[i])+'</div><div class="db" style="height:'+barH+'px;background:'+(i===0||i===6?"#555":"var(--color-primary)")+'"></div><div class="dl">'+dowNames[i]+'</div>';
 dowRow.appendChild(d)}
 
 var tbl=document.getElementById("tbl1");tbl.innerHTML="";var table=document.createElement("table");
@@ -484,23 +998,23 @@ var spreads=A.daily.map(function(d){return d.spread}).slice().sort(function(a,b)
 var n=spreads.length;var r=clearCanvas("c2",380);var ctx=r.ctx,w=r.w,h=r.h;
 var pad={t:25,r:30,b:45,l:55};var pW=w-pad.l-pad.r;var pH=h-pad.t-pad.b;
 var yMax=spreads[0]*1.1;if(yMax<50)yMax=50;
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("Spread Duration Curve (\u20AC/MWh)",pad.l,pad.t-8);
 for(var i=0;i<=5;i++){var y=pad.t+i*pH/5;var val=yMax-(yMax)*i/5;
 ctx.fillStyle="#888";ctx.textAlign="right";ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
 for(var i=0;i<=10;i++){var pct=i*10;var x=pad.l+pct/100*pW;
-ctx.fillStyle="#888";ctx.textAlign="center";ctx.font="9px sans-serif";ctx.fillText(pct+"%",x,h-pad.b+14)}
-ctx.fillStyle="#666";ctx.textAlign="center";ctx.font="8px sans-serif";
+ctx.fillStyle="#888";ctx.textAlign="center";ctx.font="9px Inter,sans-serif";ctx.fillText(pct+"%",x,h-pad.b+14)}
+ctx.fillStyle="#666";ctx.textAlign="center";ctx.font="8px Inter,sans-serif";
 ctx.fillText("% of days with spread \u2265 value",pad.l+pW/2,h-pad.b+28);
 var thresholds=[50,100,200,300];
 var thColors=["rgba(34,197,94,0.3)","rgba(234,179,8,0.3)","rgba(249,115,22,0.3)","rgba(239,68,68,0.3)"];
 for(var ti=0;ti<thresholds.length;ti++){var tv=thresholds[ti];if(tv>=yMax)continue;
 var ty=pad.t+(1-tv/yMax)*pH;ctx.strokeStyle=thColors[ti];ctx.lineWidth=1;ctx.setLineDash([4,4]);
 ctx.beginPath();ctx.moveTo(pad.l,ty);ctx.lineTo(w-pad.r,ty);ctx.stroke();ctx.setLineDash([]);
-ctx.fillStyle=thColors[ti].replace("0.3","0.7");ctx.textAlign="left";ctx.font="8px sans-serif";
+ctx.fillStyle=thColors[ti].replace("0.3","0.7");ctx.textAlign="left";ctx.font="8px Inter,sans-serif";
 ctx.fillText("\u20AC"+tv,w-pad.r+2,ty+3)}
-ctx.fillStyle="rgba(74,108,247,0.15)";ctx.beginPath();
+ctx.fillStyle="rgba(74,108,247,0.12)";ctx.beginPath();
 ctx.moveTo(pad.l,pad.t+(1-spreads[0]/yMax)*pH);
 for(var i=0;i<n;i++){var x=pad.l+(i/(n-1))*pW;var y=pad.t+(1-spreads[i]/yMax)*pH;ctx.lineTo(x,y)}
 ctx.lineTo(pad.l+pW,pad.t+pH);ctx.lineTo(pad.l,pad.t+pH);ctx.closePath();ctx.fill();
@@ -509,7 +1023,7 @@ for(var i=0;i<n;i++){var x=pad.l+(i/(n-1))*pW;var y=pad.t+(1-spreads[i]/yMax)*pH
 if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
 var medIdx=Math.floor(n/2);var medX=pad.l+(medIdx/(n-1))*pW;var medY=pad.t+(1-spreads[medIdx]/yMax)*pH;
 ctx.fillStyle="#eab308";ctx.beginPath();ctx.arc(medX,medY,4,0,Math.PI*2);ctx.fill();
-ctx.font="bold 9px sans-serif";ctx.textAlign="left";ctx.fillText("P50: \u20AC"+Math.round(spreads[medIdx]),medX+6,medY-4);
+ctx.font="bold 9px Inter,sans-serif";ctx.textAlign="left";ctx.fillText("P50: \u20AC"+Math.round(spreads[medIdx]),medX+6,medY-4);
 var p90Idx=Math.floor(n*0.9);if(p90Idx<n){
 var p90X=pad.l+(p90Idx/(n-1))*pW;var p90Y=pad.t+(1-spreads[p90Idx]/yMax)*pH;
 ctx.fillStyle="#22c55e";ctx.beginPath();ctx.arc(p90X,p90Y,4,0,Math.PI*2);ctx.fill();
@@ -517,7 +1031,7 @@ ctx.fillText("P90: \u20AC"+Math.round(spreads[p90Idx]),p90X+6,p90Y+10)}
 var meanS=aAvg(spreads);var meanY=pad.t+(1-meanS/yMax)*pH;
 ctx.strokeStyle="rgba(239,68,68,0.6)";ctx.lineWidth=1;ctx.setLineDash([6,3]);
 ctx.beginPath();ctx.moveTo(pad.l,meanY);ctx.lineTo(w-pad.r,meanY);ctx.stroke();ctx.setLineDash([]);
-ctx.fillStyle="#ef4444";ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.fillStyle="#ef4444";ctx.font="8px Inter,sans-serif";ctx.textAlign="right";
 ctx.fillText("Mean: \u20AC"+Math.round(meanS),pad.l+pW-4,meanY-4);
 var ss=document.getElementById("spreadStats");
 var pa100=0,pa200=0;for(var i=0;i<n;i++){if(spreads[i]>=100)pa100++;if(spreads[i]>=200)pa200++}
@@ -531,23 +1045,23 @@ var topH=h*0.55;var pad={t:20,r:20,b:5,l:50};var pW=w-pad.l-pad.r;
 var dailyAvgs=ds.map(function(d){return d.avg});
 var allVals=dailyAvgs.concat(A.rollPrice7).concat(A.rollPrice30);
 var yMin=aMin(allVals)*0.95;var yMax=aMax(allVals)*1.05;if(yMin>0)yMin=0;
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("Daily Average Price & Moving Averages (\u20AC/MWh)",pad.l,pad.t-4);
 for(var i=0;i<=4;i++){var y=pad.t+i*(topH-pad.t-pad.b)/4;var val=yMax-(yMax-yMin)*i/4;
-ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px Inter,sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
 if(yMin<0&&yMax>0){var zY=pad.t+(1-(0-yMin)/(yMax-yMin))*(topH-pad.t-pad.b);
-ctx.strokeStyle="rgba(255,255,255,0.15)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,zY);ctx.lineTo(w-pad.r,zY);ctx.stroke()}
+ctx.strokeStyle="rgba(255,255,255,0.12)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,zY);ctx.lineTo(w-pad.r,zY);ctx.stroke()}
 for(var i=0;i<n;i++){var x=pad.l+(i+0.5)/n*pW;
 var y=pad.t+(1-(dailyAvgs[i]-yMin)/(yMax-yMin))*(topH-pad.t-pad.b);
-ctx.fillStyle="rgba(74,108,247,0.35)";ctx.beginPath();ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill()}
+ctx.fillStyle="rgba(74,108,247,0.3)";ctx.beginPath();ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill()}
 function drawMAT(arr,color,lw){ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.beginPath();
 for(var i=0;i<arr.length;i++){var x=pad.l+(i+0.5)/arr.length*pW;
 var y=pad.t+(1-(arr[i]-yMin)/(yMax-yMin))*(topH-pad.t-pad.b);
 if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
-drawMAT(A.rollPrice30,"rgba(255,255,255,0.5)",1);drawMAT(A.rollPrice7,"#eab308",1.5);
+drawMAT(A.rollPrice30,"rgba(255,255,255,0.4)",1);drawMAT(A.rollPrice7,"#eab308",1.5);
 xDayLabels({t:pad.t,r:pad.r,b:5,l:pad.l},pW,topH+18,dayKeys,ctx);
-ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.font="8px Inter,sans-serif";ctx.textAlign="right";
 ctx.fillStyle="#eab308";ctx.fillText("\u25CF 7d MA",w-pad.r,pad.t+8);
 ctx.fillStyle="rgba(255,255,255,0.5)";ctx.fillText("\u25CF 30d MA",w-pad.r,pad.t+18);
 ctx.fillStyle="rgba(74,108,247,0.6)";ctx.fillText("\u25CF Daily",w-pad.r,pad.t+28);
@@ -558,10 +1072,10 @@ var offpeaks=ds.map(function(d){return d.offpeakAvg});
 var solars=ds.map(function(d){return d.solarAvg});
 var bAll=peaks.concat(offpeaks).concat(solars);
 var bMin=aMin(bAll)*0.9;var bMax=aMax(bAll)*1.1;if(bMin>0)bMin=0;
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("Price Structure: Peak (8-20h) vs Off-Peak vs Solar (10-14h) \u2014 7d rolling",pad.l,botY-6);
 for(var i=0;i<=3;i++){var y=botY+i*botH/3;var val=bMax-(bMax-bMin)*i/3;
-ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px Inter,sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
 function roll7(arr){var r=[];for(var i=0;i<arr.length;i++){
 var s=Math.max(0,i-6),sum=0,c=0;for(var j=s;j<=i;j++){sum+=arr[j];c++}r.push(sum/c)}return r}
@@ -569,7 +1083,7 @@ function drawBL(arr,color,lw){ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.beginPa
 for(var i=0;i<arr.length;i++){var x=pad.l+(i+0.5)/arr.length*pW;
 var y=botY+(1-(arr[i]-bMin)/(bMax-bMin))*botH;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
 drawBL(roll7(peaks),"#ef4444",1.5);drawBL(roll7(offpeaks),"#4a6cf7",1.5);drawBL(roll7(solars),"#eab308",1.5);
-ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.font="8px Inter,sans-serif";ctx.textAlign="right";
 ctx.fillStyle="#ef4444";ctx.fillText("\u25CF Peak",w-pad.r,botY+8);
 ctx.fillStyle="#4a6cf7";ctx.fillText("\u25CF Off-Peak",w-pad.r,botY+18);
 ctx.fillStyle="#eab308";ctx.fillText("\u25CF Solar",w-pad.r,botY+28);
@@ -581,12 +1095,12 @@ if(!A.daily||!A.daily.length)return;
 var ds=A.daily,n=ds.length;var r=clearCanvas("c4",420);var ctx=r.ctx,w=r.w,h=r.h;
 var topH=h*0.45;var pad={t:20,r:20,b:5,l:50};var pW=w-pad.l-pad.r;
 var vol7=A.rollVol7;var vMax=aMax(vol7)*1.15;if(vMax<5)vMax=5;
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("Rolling 7-Day Price Volatility (\u03C3 \u20AC/MWh)",pad.l,pad.t-4);
 for(var i=0;i<=4;i++){var y=pad.t+i*(topH-pad.t-pad.b)/4;var val=vMax-(vMax)*i/4;
-ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="9px Inter,sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
-ctx.fillStyle="rgba(249,115,22,0.1)";ctx.beginPath();ctx.moveTo(pad.l,topH-pad.b);
+ctx.fillStyle="rgba(249,115,22,0.08)";ctx.beginPath();ctx.moveTo(pad.l,topH-pad.b);
 for(var i=0;i<vol7.length;i++){var x=pad.l+(i+0.5)/vol7.length*pW;
 ctx.lineTo(x,pad.t+(1-vol7[i]/vMax)*(topH-pad.t-pad.b))}
 ctx.lineTo(pad.l+(vol7.length-0.5)/vol7.length*pW,topH-pad.b);ctx.closePath();ctx.fill();
@@ -601,17 +1115,17 @@ ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill()}}
 xDayLabels({t:pad.t,r:pad.r,b:5,l:pad.l},pW,topH+18,dayKeys,ctx);
 
 var botY=topH+35;var botH=h-botY-30;
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("Negative Price Hours Per Day",pad.l,botY-6);
 var negHrs=ds.map(function(d){return d.negHours});
 var nMax=Math.max(aMax(negHrs)*1.2,1);
 for(var i=0;i<=3;i++){var y=botY+i*botH/3;var val=nMax-(nMax)*i/3;
-ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";ctx.fillText(val.toFixed(1)+"h",pad.l-4,y+3);
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px Inter,sans-serif";ctx.fillText(val.toFixed(1)+"h",pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
 var bW=Math.max(2,pW/n-1);
 for(var i=0;i<n;i++){if(negHrs[i]<=0)continue;
 var x=pad.l+(i+0.5)/n*pW-bW/2;var bH=(negHrs[i]/nMax)*botH;
-ctx.fillStyle="rgba(168,85,247,0.6)";ctx.fillRect(x,botY+botH-bH,bW,bH)}
+ctx.fillStyle="rgba(168,85,247,0.5)";ctx.fillRect(x,botY+botH-bH,bW,bH)}
 ctx.strokeStyle="#a855f7";ctx.lineWidth=1.5;ctx.beginPath();
 for(var i=0;i<A.rollNeg7.length;i++){var x=pad.l+(i+0.5)/A.rollNeg7.length*pW;
 var y=botY+botH-(A.rollNeg7[i]/nMax)*botH;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
@@ -620,7 +1134,7 @@ var avgND=0,ndC=0;for(var i=0;i<n;i++)if(ds[i].negAvgDepth<0){avgND+=ds[i].negAv
 avgND=ndC?avgND/ndC:0;
 document.getElementById("volStats").innerHTML="Total negative hours: "+fmt(totalNeg)+"h across "+daysNeg+"/"+n+" days ("+Math.round(daysNeg/n*100)+"%) | Avg depth when negative: \u20AC"+fmt(avgND)+"/MWh | Avg daily \u03C3: \u20AC"+fmt(aAvg(ds.map(function(d){return d.stdDev})))}
 
-/* ===== TAB 5: DAILY PROFILES ===== */
+/* ===== TAB 5: DAILY PROFILES (raw canvas preserved) ===== */
 function drawProfiles(){
 var r=clearCanvas("c5",400);var ctx=r.ctx,w=r.w,h=r.h;if(!dayKeys.length)return;
 var pad={t:20,r:20,b:40,l:50};var pW=w-pad.l-pad.r;
@@ -632,31 +1146,33 @@ var xLbls=[];for(var i=0;i<=4;i++){xLbls.push([String(i*6).padStart(2,"0")+":00"
 xLbls.push(["24:00",pad.l+pW]);
 drawAxes(ctx,w,h,pad,yMin,yMax,xLbls,"EUR/MWh");
 ctx.lineWidth=1;dayKeys.forEach(function(dk){
-var ps=days[dk].prices;ctx.strokeStyle=dk>=hlDate?"rgba(239,68,68,0.7)":"rgba(74,108,247,0.5)";
+var ps=days[dk].prices;ctx.strokeStyle=dk>=hlDate?"rgba(239,68,68,0.6)":"rgba(74,108,247,0.4)";
 ctx.beginPath();for(var i=0;i<ps.length;i++){if(ps[i]===null)continue;
 var x=pad.l+i/ps.length*pW;var y=pad.t+(1-(ps[i]-yMin)/(yMax-yMin))*(h-pad.t-pad.b);
 if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()})}
 
-/* ===== TAB 6: HEATMAP ===== */
+/* ===== TAB 6: HEATMAP (raw canvas preserved with improved colors) ===== */
 function drawHeatmap(){
 var r=clearCanvas("c6",400);var ctx=r.ctx,w=r.w,h=r.h;if(!dayKeys.length)return;
 var pad={t:30,r:20,b:40,l:60};var pW=w-pad.l-pad.r;var pH=h-pad.t-pad.b;
 var nR=dayKeys.length;var validP=allPrices.filter(function(p){return p!==null});
 var pMn=aMin(validP),pMx=aMax(validP);var spd=Math.round(86400/interval);
 function hC(v){var t=(v-pMn)/(pMx-pMn);if(t<0)t=0;if(t>1)t=1;
-if(t<0.5){return"rgb("+Math.round(50+t*2*150)+","+Math.round(50+t*2*150)+","+Math.round(200+t*2*55)+")"}
-else{var t2=(t-0.5)*2;return"rgb("+Math.round(200+t2*55)+","+Math.round(200-t2*150)+","+Math.round(50-t2*30)+")"}}
-ctx.fillStyle="#888";ctx.font="9px sans-serif";
+if(t<0.25){return"rgb("+Math.round(20+t*4*60)+","+Math.round(20+t*4*80)+","+Math.round(80+t*4*140)+")"}
+else if(t<0.5){var t2=(t-0.25)*4;return"rgb("+Math.round(80+t2*100)+","+Math.round(100+t2*120)+","+Math.round(220-t2*60)+")"}
+else if(t<0.75){var t3=(t-0.5)*4;return"rgb("+Math.round(180+t3*60)+","+Math.round(220-t3*80)+","+Math.round(160-t3*100)+")"}
+else{var t4=(t-0.75)*4;return"rgb("+Math.round(240+t4*15)+","+Math.round(140-t4*90)+","+Math.round(60-t4*40)+")"}}
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";
 for(var i=0;i<24;i++){ctx.textAlign="center";ctx.fillText(String(i).padStart(2,"0")+":00",pad.l+i/24*pW+pW/48,pad.t-8)}
 for(var d=0;d<nR;d++){var cH=pH/nR;for(var j=0;j<24;j++){var cW=pW/24;
 var idx=Math.floor(j*spd/24);
-ctx.fillStyle=days[dayKeys[d]]&&days[dayKeys[d]].prices[idx]!==undefined?hC(days[dayKeys[d]].prices[idx]):"#222";
+ctx.fillStyle=days[dayKeys[d]]&&days[dayKeys[d]].prices[idx]!==undefined?hC(days[dayKeys[d]].prices[idx]):"#111";
 ctx.fillRect(pad.l+j*cW,pad.t+d*cH,cW+1,cH+1)}}
-ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px Inter,sans-serif";
 for(var i=0;i<nR;i+=Math.max(1,Math.ceil(nR/15))){ctx.fillText(fmtDateLabel(dayKeys[i],nR),pad.l-4,pad.t+i*pH/nR+pH/nR/2+3)}
 var gW=100,gX=w-pad.r-gW,gY=pad.t;
 for(var i=0;i<gW;i++){ctx.fillStyle=hC(pMn+(pMx-pMn)*i/gW);ctx.fillRect(gX+i,gY,2,8)}
-ctx.fillStyle="#888";ctx.font="7px sans-serif";ctx.textAlign="left";ctx.fillText(Math.round(pMn),gX,gY+18);
+ctx.fillStyle="#888";ctx.font="7px Inter,sans-serif";ctx.textAlign="left";ctx.fillText(Math.round(pMn),gX,gY+18);
 ctx.textAlign="right";ctx.fillText(Math.round(pMx)+" EUR/MWh",gX+gW,gY+18)}
 
 /* ===== TAB 7: TB SPREADS ===== */
@@ -682,7 +1198,6 @@ for(var i=0;i<items.length;i++){var it=items[i];var d=document.createElement("di
 d.innerHTML='<div class="tk-label">'+it.label+'</div><div class="tk-val" style="color:'+it.color+'">'+it.val+'</div><div class="tk-sub">'+it.sub+'</div>';
 kpis.appendChild(d)}
 
-/* 24-hour profile bar chart */
 var r=clearCanvas("c7a",200);var ctx=r.ctx,w=r.w,h=r.h;
 var pad={t:20,r:20,b:25,l:50};var pW=w-pad.l-pad.r;
 var hourly=last.hourly;var hValid=hourly.filter(function(v){return v!==null});
@@ -693,13 +1208,13 @@ var l1=sorted[sorted.length-1],l2=sorted.length>1?sorted[sorted.length-2]:l1;
 var h4Set=new Set(),l4Set=new Set();
 for(var ci=0;ci<Math.min(4,sorted.length);ci++){h4Set.add(sorted[ci]);l4Set.add(sorted[sorted.length-1-ci])}
 var yMin=Math.min(0,aMin(hValid)*1.1),yMax=aMax(hValid)*1.15;if(yMax<=yMin)yMax=yMin+10;
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
-ctx.fillText("24-Hour DA Price Profile — "+last.date+" (€/MWh)",pad.l,pad.t-4);
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
+ctx.fillText("24-Hour DA Price Profile \u2014 "+last.date+" (\u20AC/MWh)",pad.l,pad.t-4);
 for(var si=0;si<=4;si++){var y=pad.t+si*(h-pad.t-pad.b)/4;var val=yMax-(yMax-yMin)*si/4;
-ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
+ctx.fillStyle="#888";ctx.textAlign="right";ctx.font="8px Inter,sans-serif";ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
 if(yMin<0){var zY=pad.t+(1-(0-yMin)/(yMax-yMin))*(h-pad.t-pad.b);
-ctx.strokeStyle="rgba(255,255,255,0.15)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,zY);ctx.lineTo(w-pad.r,zY);ctx.stroke()}
+ctx.strokeStyle="rgba(255,255,255,0.12)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,zY);ctx.lineTo(w-pad.r,zY);ctx.stroke()}
 var bW=pW/24-2;
 for(var bi=0;bi<24;bi++){var v=hourly[bi];if(v===null)continue;
 var x=pad.l+bi/24*pW+1;var barH=Math.abs(v-Math.max(0,yMin))/(yMax-yMin)*(h-pad.t-pad.b);
@@ -707,16 +1222,15 @@ var barY=v>=0?pad.t+(1-(v-yMin)/(yMax-yMin))*(h-pad.t-pad.b):pad.t+(1-(0-yMin)/(
 if(v<0)barH=Math.abs(v)/(yMax-yMin)*(h-pad.t-pad.b);
 if(v===h1)ctx.fillStyle="#f97316";
 else if(v===l1)ctx.fillStyle="#22c55e";
-else if(h4Set.has(v))ctx.fillStyle="rgba(249,115,22,0.5)";
-else if(l4Set.has(v))ctx.fillStyle="rgba(168,85,247,0.5)";
-else ctx.fillStyle="rgba(74,108,247,0.55)";
+else if(h4Set.has(v))ctx.fillStyle="rgba(249,115,22,0.4)";
+else if(l4Set.has(v))ctx.fillStyle="rgba(168,85,247,0.4)";
+else ctx.fillStyle="rgba(74,108,247,0.45)";
 ctx.fillRect(x,barY,bW,barH);
-if(bi%3===0){ctx.fillStyle="#888";ctx.font="7px sans-serif";ctx.textAlign="center";
+if(bi%3===0){ctx.fillStyle="#888";ctx.font="7px Inter,sans-serif";ctx.textAlign="center";
 ctx.fillText(String(bi).padStart(2,"0"),x+bW/2,h-pad.b+10)}}
-ctx.fillStyle="#888";ctx.font="7px sans-serif";ctx.textAlign="right";
+ctx.fillStyle="#888";ctx.font="7px Inter,sans-serif";ctx.textAlign="right";
 ctx.fillText("Orange=H1 | Amber=H2-4 | Green=L1 | Purple=L2-4",w-pad.r,pad.t+8)}
 
-/* TB rolling trend chart */
 var r2=clearCanvas("c7b",260);var ctx2=r2.ctx,w2=r2.w,h2=r2.h;
 var pad2={t:20,r:60,b:35,l:50};var pW2=w2-pad2.l-pad2.r;
 var series=[];
@@ -726,10 +1240,10 @@ if(tbView===2||tbView===3)series.push({data:A.rollTB4_7,color:"#a855f7",label:"T
 var allV=[];for(var si=0;si<series.length;si++)allV=allV.concat(series[si].data);
 var yMax2=aMax(allV)*1.15;if(yMax2<10)yMax2=10;var yMin2=0;
 if(tbView===2||tbView===3){var tb4Max=aMax(A.rollTB4_7);if(tb4Max>yMax2*3)yMax2=tb4Max*1.1}
-ctx2.fillStyle="#888";ctx2.font="9px sans-serif";ctx2.textAlign="left";
-ctx2.fillText("TB Spread — 7-Day Rolling Average (€/MWh)",pad2.l,pad2.t-4);
+ctx2.fillStyle="#888";ctx2.font="9px Inter,sans-serif";ctx2.textAlign="left";
+ctx2.fillText("TB Spread \u2014 7-Day Rolling Average (\u20AC/MWh)",pad2.l,pad2.t-4);
 for(var si=0;si<=4;si++){var y=pad2.t+si*(h2-pad2.t-pad2.b)/4;var val=yMax2-yMax2*si/4;
-ctx2.fillStyle="#888";ctx2.textAlign="right";ctx2.font="8px sans-serif";ctx2.fillText(Math.round(val),pad2.l-4,y+3);
+ctx2.fillStyle="#888";ctx2.textAlign="right";ctx2.font="8px Inter,sans-serif";ctx2.fillText(Math.round(val),pad2.l-4,y+3);
 ctx2.strokeStyle="#1a1a2e";ctx2.lineWidth=0.5;ctx2.beginPath();ctx2.moveTo(pad2.l,y);ctx2.lineTo(w2-pad2.r,y);ctx2.stroke()}
 xDayLabels(pad2,pW2,h2,dayKeys,ctx2);
 for(var si=0;si<series.length;si++){var s=series[si];
@@ -737,10 +1251,9 @@ ctx2.strokeStyle=s.color;ctx2.lineWidth=2;ctx2.beginPath();
 for(var i=0;i<s.data.length;i++){var x=pad2.l+(i+0.5)/s.data.length*pW2;
 var y=pad2.t+(1-s.data[i]/yMax2)*(h2-pad2.t-pad2.b);
 if(i===0)ctx2.moveTo(x,y);else ctx2.lineTo(x,y)}ctx2.stroke();
-ctx2.fillStyle=s.color;ctx2.font="8px sans-serif";ctx2.textAlign="left";
+ctx2.fillStyle=s.color;ctx2.font="8px Inter,sans-serif";ctx2.textAlign="left";
 ctx2.fillText("\u25CF "+s.label,w2-pad2.r+4,pad2.t+10+si*12)}
 
-/* TB table */
 var tbl=document.getElementById("tbl7");tbl.innerHTML="";var table=document.createElement("table");
 var hdr=table.insertRow();
 ["Date","DA Avg","TB1","TB2","TB4","High","Low","TB1 vs 7d Avg"].forEach(function(t){
@@ -759,12 +1272,9 @@ var diff=d.tb1-tb1Avg7;var dc=row.insertCell();dc.textContent=(diff>=0?"+":"")+f
 dc.className=diff>=0?"pos":"neg"}
 tbl.appendChild(table);
 
-/* 18-Month TB Trend — dual axis */
 var slice18=Math.min(548,n);
 drawDualAxisTB("c7c",ds.slice(n-slice18),dayKeys.slice(n-slice18),
 A.rollTB1_7.slice(n-slice18),A.rollTB4_7.slice(n-slice18),280,false);
-
-/* Long-Run TB Spreads — with regime bands */
 drawDualAxisTB("c7d",ds,dayKeys,A.rollTB1_7,A.rollTB4_7,300,true)}
 
 function drawDualAxisTB(canvasId,ds,dKeys,tb1Data,tb4Data,canvasH,showBands){
@@ -772,23 +1282,17 @@ if(!ds||ds.length<7)return;
 var n=ds.length;
 var r=clearCanvas(canvasId,canvasH);var ctx=r.ctx,w=r.w,h=r.h;
 var pad={t:30,r:60,b:35,l:55};var pW=w-pad.l-pad.r;var pH=h-pad.t-pad.b;
-
-/* Compute Y scales independently */
 var tb1Max=aMax(tb1Data)*1.15;if(tb1Max<10)tb1Max=10;
 var tb4Max=aMax(tb4Data)*1.15;if(tb4Max<10)tb4Max=10;
-
-/* Title */
 var firstDate=dKeys[0],lastDate=dKeys[n-1];
 var rangeLabel=fmtDateLabel(firstDate,n)+" - "+fmtDateLabel(lastDate,n);
-ctx.fillStyle="#888";ctx.font="9px sans-serif";ctx.textAlign="left";
+ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("TB1 & TB4 -- 7-Day Rolling Average -- "+rangeLabel,pad.l,pad.t-14);
-ctx.fillStyle="#666";ctx.font="7px sans-serif";
+ctx.fillStyle="#666";ctx.font="7px Inter,sans-serif";
 ctx.fillText("TB1 LEFT Y (Yellow) -- TB4 RIGHT Y (Purple)",pad.l,pad.t-4);
-
-/* Annual regime bands */
 if(showBands){
-var yearColors={"2020":"rgba(100,100,100,0.08)","2021":"rgba(6,182,212,0.10)","2022":"rgba(249,115,22,0.10)",
-"2023":"rgba(34,197,94,0.10)","2024":"rgba(168,85,247,0.10)","2025":"rgba(236,72,153,0.10)","2026":"rgba(74,108,247,0.10)"};
+var yearColors={"2020":"rgba(100,100,100,0.06)","2021":"rgba(6,182,212,0.08)","2022":"rgba(249,115,22,0.08)",
+"2023":"rgba(34,197,94,0.08)","2024":"rgba(168,85,247,0.08)","2025":"rgba(236,72,153,0.08)","2026":"rgba(74,108,247,0.08)"};
 var yearTextColors={"2020":"#555","2021":"#06b6d4","2022":"#f97316","2023":"#22c55e","2024":"#a855f7","2025":"#ec4899","2026":"#4a6cf7"};
 var curYear=null,bandStart=0;
 for(var i=0;i<=n;i++){
@@ -796,50 +1300,36 @@ var yr=i<n?dKeys[i].substring(0,4):null;
 if(yr!==curYear){
 if(curYear!==null){
 var x0=pad.l+bandStart/n*pW;var x1=pad.l+i/n*pW;
-ctx.fillStyle=yearColors[curYear]||"rgba(100,100,100,0.06)";
+ctx.fillStyle=yearColors[curYear]||"rgba(100,100,100,0.04)";
 ctx.fillRect(x0,pad.t,x1-x0,pH);
-ctx.fillStyle=yearTextColors[curYear]||"#555";ctx.font="bold 10px sans-serif";ctx.textAlign="center";
+ctx.fillStyle=yearTextColors[curYear]||"#555";ctx.font="bold 10px Inter,sans-serif";ctx.textAlign="center";
 ctx.fillText(curYear,(x0+x1)/2,pad.t+14)}
 curYear=yr;bandStart=i}}}
-
-/* Left Y axis (TB1) */
-ctx.fillStyle="#eab308";ctx.font="8px sans-serif";ctx.textAlign="right";
+ctx.fillStyle="#eab308";ctx.font="8px Inter,sans-serif";ctx.textAlign="right";
 for(var i=0;i<=4;i++){var y=pad.t+i*pH/4;var val=tb1Max-tb1Max*i/4;
 ctx.fillText(Math.round(val),pad.l-4,y+3);
 ctx.strokeStyle="#1a1a2e";ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
-
-/* Right Y axis (TB4) */
 ctx.fillStyle="#a855f7";ctx.textAlign="left";
 for(var i=0;i<=4;i++){var y=pad.t+i*pH/4;var val=tb4Max-tb4Max*i/4;
 ctx.fillText(Math.round(val),w-pad.r+4,y+3)}
-
-/* X axis labels */
 xDayLabels(pad,pW,h,dKeys,ctx);
-
-/* TB1 line (yellow, left axis) */
 ctx.strokeStyle="#eab308";ctx.lineWidth=2;ctx.beginPath();
 for(var i=0;i<n;i++){var x=pad.l+(i+0.5)/n*pW;
 var y=pad.t+(1-tb1Data[i]/tb1Max)*pH;
 if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
-
-/* TB4 line (purple, right axis) */
 ctx.strokeStyle="#a855f7";ctx.lineWidth=2;ctx.beginPath();
 for(var i=0;i<n;i++){var x=pad.l+(i+0.5)/n*pW;
 var y=pad.t+(1-tb4Data[i]/tb4Max)*pH;
 if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
-
-/* Legend */
-ctx.font="8px sans-serif";
+ctx.font="8px Inter,sans-serif";
 ctx.fillStyle="#eab308";ctx.fillText("\u25CF TB1 7d Avg (Left axis)",pad.l+4,pad.t+10);
 ctx.fillStyle="#a855f7";ctx.fillText("\u25CF TB4 7d Avg (Right axis)",pad.l+4,pad.t+20)}
 
-/* ===== MASTER DRAW ===== */
-/* ===== MARKET INSIGHTS ENGINE ===== */
+/* ===== AI INSIGHTS ENGINE ===== */
 function generateInsights(){
 var ds=A.daily;if(!ds||ds.length<7)return[];
 var n=ds.length;var ins=[];
 var w7=Math.min(7,n),w30=Math.min(30,n),w90=Math.min(90,n);
-/* helper: recent avg of field over w days */
 function rAvg(field,w){var s=0;for(var i=n-w;i<n;i++)s+=ds[i][field];return s/w}
 function pAvg(field,w){var e=n-w,st=Math.max(0,e-w);if(st>=e)return null;var s=0;for(var i=st;i<e;i++)s+=ds[i][field];return s/(e-st)}
 function pctChg(recent,prior){if(!prior||Math.abs(prior)<0.01)return null;return(recent-prior)/Math.abs(prior)*100}
@@ -848,7 +1338,6 @@ function trend(arr,w){var sl=arrSlice(arr,w);if(sl.length<4)return 0;var h=Math.
 var first=0,second=0;for(var i=0;i<h;i++)first+=sl[i];first/=h;
 for(var i=h;i<sl.length;i++)second+=sl[i];second/=(sl.length-h);
 if(Math.abs(first)<0.01)return 0;return(second-first)/Math.abs(first)*100}
-/* cross-tab metrics */
 var priceNow=rAvg("avg",w7),pricePrior=pAvg("avg",w7);
 var spreadNow=rAvg("spread",w7),spreadPrior=pAvg("spread",w7);
 var volNow=rAvg("stdDev",w7),volPrior=pAvg("stdDev",w7);
@@ -866,193 +1355,137 @@ var periodAvgSpread=aAvg(ds.map(function(d){return d.spread}));
 var periodAvgVol=aAvg(ds.map(function(d){return d.stdDev}));
 var tab=activeTab;
 
-/* ---- TAB 0: SUMMARY ---- */
 if(tab===0){
-/* Price regime */
-if(priceNow<30)ins.push({t:"Average power price at "+"\u20AC"+fmt(priceNow)+"/MWh places the market in a <b>low-price regime</b>, typical of periods with strong renewable output or low demand.",c:"neut"});
-else if(priceNow<60)ins.push({t:"Average price at "+"\u20AC"+fmt(priceNow)+"/MWh indicates a <b>moderate price regime</b>, consistent with balanced supply-demand fundamentals.",c:"neut"});
-else if(priceNow<100)ins.push({t:"Elevated average price at "+"\u20AC"+fmt(priceNow)+"/MWh signals a <b>high-price regime</b> \u2014 likely driven by tight supply, high gas prices, or weather-driven demand.",c:"warn"});
-else ins.push({t:"Extreme average price at "+"\u20AC"+fmt(priceNow)+"/MWh indicates <b>market stress</b> \u2014 investigate supply outages, fuel cost spikes, or interconnector constraints.",c:"bear"});
-/* Price trend */
+if(priceNow<30)ins.push({t:"Average power price at \u20AC"+fmt(priceNow)+"/MWh places the market in a <b>low-price regime</b>, typical of periods with strong renewable output or low demand.",c:"neut"});
+else if(priceNow<60)ins.push({t:"Average price at \u20AC"+fmt(priceNow)+"/MWh indicates a <b>moderate price regime</b>, consistent with balanced supply-demand fundamentals.",c:"neut"});
+else if(priceNow<100)ins.push({t:"Elevated average price at \u20AC"+fmt(priceNow)+"/MWh signals a <b>high-price regime</b> \u2014 likely driven by tight supply, high gas prices, or weather-driven demand.",c:"warn"});
+else ins.push({t:"Extreme average price at \u20AC"+fmt(priceNow)+"/MWh indicates <b>market stress</b> \u2014 investigate supply outages, fuel cost spikes, or interconnector constraints.",c:"bear"});
 if(pricePct!==null){
 if(pricePct>10)ins.push({t:"Prices trending <b>upward</b> ("+fmtPct(pricePct)+" vs prior 7d) \u2014 rising marginal generation costs or tightening supply.",c:"bear"});
 else if(pricePct<-10)ins.push({t:"Prices trending <b>downward</b> ("+fmtPct(pricePct)+" vs prior 7d) \u2014 improving supply conditions or weakening demand.",c:"bull"});
 else ins.push({t:"Prices <b>stable</b> week-on-week ("+fmtPct(pricePct)+"), indicating settled market fundamentals.",c:"neut"})}
-/* BESS attractiveness */
-if(bessNow>periodAvgBess*1.3)ins.push({t:"BESS revenue at "+"\u20AC"+fmt(bessNow)+"/MW/day is <b>"+Math.round(bessNow/periodAvgBess*100)+"% of period average</b> \u2014 above-average arbitrage conditions.",c:"bull"});
-else if(bessNow<periodAvgBess*0.7)ins.push({t:"BESS revenue at "+"\u20AC"+fmt(bessNow)+"/MW/day is <b>below period average</b> \u2014 compressed spreads are limiting arbitrage opportunity.",c:"bear"});
-/* Solar cannibalization */
+if(bessNow>periodAvgBess*1.3)ins.push({t:"BESS revenue at \u20AC"+fmt(bessNow)+"/MW/day is <b>"+Math.round(bessNow/periodAvgBess*100)+"% of period average</b> \u2014 above-average arbitrage conditions.",c:"bull"});
+else if(bessNow<periodAvgBess*0.7)ins.push({t:"BESS revenue at \u20AC"+fmt(bessNow)+"/MW/day is <b>below period average</b> \u2014 compressed spreads are limiting arbitrage opportunity.",c:"bear"});
 if(solarNow<0.8)ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> (below 0.80) \u2014 <b>severe midday price depression</b>. Uncontracted solar assets earning significantly below market average.",c:"bear"});
-else if(solarNow<0.9)ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> \u2014 moderate midday price suppression. Solar capture rates below daily average.",c:"warn"});
+else if(solarNow<0.9)ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> \u2014 moderate midday price suppression.",c:"warn"});
 else if(solarNow<1.0)ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> \u2014 mild suppression, solar capture close to market average.",c:"neut"});
 else ins.push({t:"Solar cannibalisation index at <b>"+solarNow.toFixed(2)+"</b> (above 1.0) \u2014 midday prices exceed daily average, favourable for solar revenue.",c:"bull"});
-/* Neg hours */
-if(negNow>2)ins.push({t:"<b>"+negNow.toFixed(1)+" negative hours/day</b> in the past week \u2014 significant oversupply events, positive for BESS (charge at negative prices) but destructive for unhedged generators.",c:"warn"});
-else if(negNow>0.5)ins.push({t:negNow.toFixed(1)+" negative hours/day recently \u2014 occasional oversupply events, monitor for seasonal patterns.",c:"neut"});
-/* Annualised BESS */
+if(negNow>2)ins.push({t:"<b>"+negNow.toFixed(1)+" negative hours/day</b> in the past week \u2014 significant oversupply events.",c:"warn"});
+else if(negNow>0.5)ins.push({t:negNow.toFixed(1)+" negative hours/day recently \u2014 occasional oversupply events.",c:"neut"});
 var annBess=periodAvgBess*365;
-ins.push({t:"Period-average BESS revenue annualises to ~<b>"+"\u20AC"+Math.round(annBess).toLocaleString()+"/MW/yr</b> (theoretical 1-cycle, 88% RTE).",c:"neut"});
+ins.push({t:"Period-average BESS revenue annualises to ~<b>\u20AC"+Math.round(annBess).toLocaleString()+"/MW/yr</b> (theoretical 1-cycle, 88% RTE).",c:"neut"});
 }
-
-/* ---- TAB 1: BESS ECONOMICS ---- */
 else if(tab===1){
 if(bessPct!==null){
-if(bessPct>15)ins.push({t:"BESS revenue trending <b>strongly upward</b> ("+fmtPct(bessPct)+" WoW) \u2014 widening spreads are boosting arbitrage income.",c:"bull"});
+if(bessPct>15)ins.push({t:"BESS revenue trending <b>strongly upward</b> ("+fmtPct(bessPct)+" WoW).",c:"bull"});
 else if(bessPct>5)ins.push({t:"BESS revenue trending <b>modestly higher</b> ("+fmtPct(bessPct)+" WoW).",c:"bull"});
-else if(bessPct<-15)ins.push({t:"BESS revenue <b>declining sharply</b> ("+fmtPct(bessPct)+" WoW) \u2014 spread compression impacting arbitrage economics.",c:"bear"});
+else if(bessPct<-15)ins.push({t:"BESS revenue <b>declining sharply</b> ("+fmtPct(bessPct)+" WoW).",c:"bear"});
 else if(bessPct<-5)ins.push({t:"BESS revenue trending <b>slightly lower</b> ("+fmtPct(bessPct)+" WoW).",c:"bear"});
 else ins.push({t:"BESS revenue <b>stable</b> week-on-week ("+fmtPct(bessPct)+").",c:"neut"})}
-/* Spike days */
 var spikeDays=0;for(var i=n-w30;i<n;i++)if(ds[i].bessRev>periodAvgBess*2)spikeDays++;
 var spikePct=Math.round(spikeDays/w30*100);
-if(spikePct>30)ins.push({t:"<b>"+spikePct+"% of recent days</b> had revenue exceeding 2x period average \u2014 high-spike environment favourable for opportunistic trading strategies.",c:"bull"});
-else if(spikePct>10)ins.push({t:spikePct+"% of recent days exceeded 2x average revenue \u2014 moderate spike frequency.",c:"neut"});
-else ins.push({t:"Only "+spikePct+"% of recent days exceeded 2x average \u2014 relatively low spike frequency, steady-state revenue environment.",c:"neut"});
-/* Weekend vs weekday */
+if(spikePct>30)ins.push({t:"<b>"+spikePct+"% of recent days</b> had revenue exceeding 2x period average.",c:"bull"});
+else if(spikePct>10)ins.push({t:spikePct+"% of recent days exceeded 2x average revenue.",c:"neut"});
+else ins.push({t:"Only "+spikePct+"% of recent days exceeded 2x average \u2014 steady-state revenue environment.",c:"neut"});
 var wdSum=0,wdCnt=0,weSum=0,weCnt=0;
 for(var i=0;i<n;i++){if(ds[i].dow===0||ds[i].dow===6){weSum+=ds[i].bessRev;weCnt++}else{wdSum+=ds[i].bessRev;wdCnt++}}
 var wdAvg=wdCnt?wdSum/wdCnt:0,weAvg=weCnt?weSum/weCnt:0;
 if(wdAvg>0&&weAvg>0){var weDiff=Math.round((weAvg/wdAvg-1)*100);
-if(weDiff<-20)ins.push({t:"Weekend revenue averages <b>"+Math.abs(weDiff)+"% lower</b> than weekdays \u2014 schedule maintenance during weekends to maximise availability during high-value periods.",c:"neut"});
-else if(weDiff>10)ins.push({t:"Weekend revenue surprisingly <b>"+weDiff+"% above</b> weekdays \u2014 unusual pattern, possibly driven by renewable intermittency or demand anomalies.",c:"neut"})}
-/* Cumulative */
-var cumTotal=A.cumBess[n-1];
-var annRate=cumTotal/n*365;
-ins.push({t:"Cumulative theoretical BESS revenue: <b>"+"\u20AC"+Math.round(cumTotal).toLocaleString()+"/MW</b> over "+n+" days (annualised rate: "+"\u20AC"+Math.round(annRate).toLocaleString()+"/MW/yr).",c:"neut"});
+if(weDiff<-20)ins.push({t:"Weekend revenue averages <b>"+Math.abs(weDiff)+"% lower</b> than weekdays.",c:"neut"});
+else if(weDiff>10)ins.push({t:"Weekend revenue surprisingly <b>"+weDiff+"% above</b> weekdays.",c:"neut"})}
+var cumTotal=A.cumBess[n-1];var annRate=cumTotal/n*365;
+ins.push({t:"Cumulative theoretical BESS revenue: <b>\u20AC"+Math.round(cumTotal).toLocaleString()+"/MW</b> over "+n+" days (annualised: \u20AC"+Math.round(annRate).toLocaleString()+"/MW/yr).",c:"neut"});
 }
-
-/* ---- TAB 2: SPREAD DURATION ---- */
 else if(tab===2){
 var spreads=ds.map(function(d){return d.spread}).sort(function(a,b){return b-a});
-var p50=spreads[Math.floor(spreads.length*0.5)];
-var p90=spreads.length>10?spreads[Math.floor(spreads.length*0.1)]:spreads[0];
-var mean=aAvg(spreads);
-var above50=0,above100=0,above200=0;
-for(var i=0;i<spreads.length;i++){if(spreads[i]>=50)above50++;if(spreads[i]>=100)above100++;if(spreads[i]>=200)above200++}
-ins.push({t:"<b>P50 spread: "+"\u20AC"+fmt(p50)+"/MWh</b> \u2014 on a typical (median) day, the daily price range is "+"\u20AC"+fmt(p50)+". At 88% RTE this implies ~"+"\u20AC"+fmt(p50*RTE)+"/MW/day baseline BESS revenue.",c:"neut"});
-if(p90>p50*2)ins.push({t:"P90 spread at "+"\u20AC"+fmt(p90)+" is <b>"+Math.round(p90/p50)+"x the median</b> \u2014 significant right-tail optionality. The best 10% of days offer outsized returns.",c:"bull"});
-else ins.push({t:"P90 spread at "+"\u20AC"+fmt(p90)+" \u2014 moderate upside beyond the median day.",c:"neut"});
+var p50=spreads[Math.floor(spreads.length*0.5)];var p90=spreads.length>10?spreads[Math.floor(spreads.length*0.1)]:spreads[0];var mean=aAvg(spreads);
+ins.push({t:"<b>P50 spread: \u20AC"+fmt(p50)+"/MWh</b> \u2014 median daily range implies ~\u20AC"+fmt(p50*RTE)+"/MW/day baseline BESS revenue.",c:"neut"});
+if(p90>p50*2)ins.push({t:"P90 spread at \u20AC"+fmt(p90)+" is <b>"+Math.round(p90/p50)+"x the median</b> \u2014 significant right-tail optionality.",c:"bull"});
+else ins.push({t:"P90 spread at \u20AC"+fmt(p90)+" \u2014 moderate upside beyond the median day.",c:"neut"});
+var above100=0;for(var i=0;i<spreads.length;i++)if(spreads[i]>=100)above100++;
 var pctAbove100=Math.round(above100/spreads.length*100);
-if(pctAbove100>20)ins.push({t:"<b>"+pctAbove100+"% of days</b> achieve spreads "+"\u2265"+"\u20AC"+"100/MWh \u2014 strong structural support for BESS investment cases.",c:"bull"});
-else if(pctAbove100>5)ins.push({t:pctAbove100+"% of days achieve spreads "+"\u2265"+"\u20AC"+"100/MWh \u2014 moderate opportunity frequency.",c:"neut"});
-else ins.push({t:"Only "+pctAbove100+"% of days exceed "+"\u20AC"+"100/MWh spread \u2014 limited high-value arbitrage days.",c:"bear"});
+if(pctAbove100>20)ins.push({t:"<b>"+pctAbove100+"%</b> of days achieve spreads \u2265\u20AC100/MWh.",c:"bull"});
+else if(pctAbove100>5)ins.push({t:pctAbove100+"% of days achieve spreads \u2265\u20AC100/MWh.",c:"neut"});
+else ins.push({t:"Only "+pctAbove100+"% of days exceed \u20AC100/MWh spread.",c:"bear"});
 if(spreadPct!==null){
-if(spreadPct>15)ins.push({t:"Spread trend is <b>expanding</b> ("+fmtPct(spreadPct)+" WoW) \u2014 rising volatility improving the revenue distribution.",c:"bull"});
-else if(spreadPct<-15)ins.push({t:"Spread trend is <b>compressing</b> ("+fmtPct(spreadPct)+" WoW) \u2014 the duration curve may be shifting left (lower values).",c:"bear"});
+if(spreadPct>15)ins.push({t:"Spread trend is <b>expanding</b> ("+fmtPct(spreadPct)+" WoW).",c:"bull"});
+else if(spreadPct<-15)ins.push({t:"Spread trend is <b>compressing</b> ("+fmtPct(spreadPct)+" WoW).",c:"bear"});}
 }
-}
-
-/* ---- TAB 3: PRICE STRUCTURE ---- */
 else if(tab===3){
 var peakNow=rAvg("peakAvg",w7),offpeakNow=rAvg("offpeakAvg",w7),solarAvgNow=rAvg("solarAvg",w7);
 var pkopRatio=offpeakNow!==0?peakNow/offpeakNow:1;
-if(pkopRatio>1.5)ins.push({t:"Peak/off-peak ratio at <b>"+pkopRatio.toFixed(2)+"x</b> \u2014 <b>wide structural spread</b> between day and night prices, highly favourable for time-shifting assets (BESS, demand response).",c:"bull"});
+if(pkopRatio>1.5)ins.push({t:"Peak/off-peak ratio at <b>"+pkopRatio.toFixed(2)+"x</b> \u2014 wide structural spread.",c:"bull"});
 else if(pkopRatio>1.2)ins.push({t:"Peak/off-peak ratio at <b>"+pkopRatio.toFixed(2)+"x</b> \u2014 moderate premium for peak hours.",c:"neut"});
-else if(pkopRatio>1.0)ins.push({t:"Peak/off-peak ratio at <b>"+pkopRatio.toFixed(2)+"x</b> \u2014 narrow premium, limited time-of-day arbitrage.",c:"bear"});
-else ins.push({t:"Peak/off-peak ratio <b>inverted</b> at "+pkopRatio.toFixed(2)+"x \u2014 off-peak prices exceed peak, unusual market conditions.",c:"warn"});
-/* Solar cannib with direction */
-if(solarNow<0.85&&solarTrend<-2)ins.push({t:"Solar cannibalisation is <b>worsening</b> (index "+solarNow.toFixed(2)+", trend "+fmtPct(solarTrend)+") \u2014 increasing solar penetration is deepening the midday price trough. Solar capture rates under pressure.",c:"bear"});
-else if(solarNow<0.85&&solarTrend>2)ins.push({t:"Solar cannibalisation remains <b>severe</b> (index "+solarNow.toFixed(2)+") but is <b>improving</b> ("+fmtPct(solarTrend)+") \u2014 demand growth or storage may be absorbing solar output.",c:"bull"});
-else if(solarNow<0.9)ins.push({t:"Moderate solar cannibalisation (index "+solarNow.toFixed(2)+") \u2014 midday prices suppressed below daily average.",c:"neut"});
-/* Peak premium trend */
+else if(pkopRatio>1.0)ins.push({t:"Peak/off-peak ratio at <b>"+pkopRatio.toFixed(2)+"x</b> \u2014 narrow premium.",c:"bear"});
+else ins.push({t:"Peak/off-peak ratio <b>inverted</b> at "+pkopRatio.toFixed(2)+"x.",c:"warn"});
+if(solarNow<0.85&&solarTrend<-2)ins.push({t:"Solar cannibalisation is <b>worsening</b> (index "+solarNow.toFixed(2)+", trend "+fmtPct(solarTrend)+").",c:"bear"});
+else if(solarNow<0.85&&solarTrend>2)ins.push({t:"Solar cannibalisation remains <b>severe</b> but is <b>improving</b> ("+fmtPct(solarTrend)+").",c:"bull"});
+else if(solarNow<0.9)ins.push({t:"Moderate solar cannibalisation (index "+solarNow.toFixed(2)+").",c:"neut"});
 var pkTrend=trend(A.peakRatio,w30);
-if(pkTrend>5)ins.push({t:"Peak premium <b>widening</b> (+"+pkTrend.toFixed(1)+"% trend) \u2014 evening/morning scarcity pricing increasing relative to off-peak.",c:"bull"});
-else if(pkTrend<-5)ins.push({t:"Peak premium <b>narrowing</b> ("+pkTrend.toFixed(1)+"% trend) \u2014 convergence between peak and off-peak reduces time-shifting value.",c:"bear"});
-/* Solar vs off-peak */
-if(solarAvgNow<offpeakNow)ins.push({t:"Solar hours (10-14h) now pricing <b>below off-peak</b> ("+"\u20AC"+fmt(solarAvgNow)+" vs "+"\u20AC"+fmt(offpeakNow)+") \u2014 uncontracted solar earns less than even nighttime generation.",c:"bear"});
+if(pkTrend>5)ins.push({t:"Peak premium <b>widening</b> (+"+pkTrend.toFixed(1)+"% trend).",c:"bull"});
+else if(pkTrend<-5)ins.push({t:"Peak premium <b>narrowing</b> ("+pkTrend.toFixed(1)+"% trend).",c:"bear"});
+if(solarAvgNow<offpeakNow)ins.push({t:"Solar hours now pricing <b>below off-peak</b> (\u20AC"+fmt(solarAvgNow)+" vs \u20AC"+fmt(offpeakNow)+").",c:"bear"});
 }
-
-/* ---- TAB 4: VOLATILITY & RISK ---- */
 else if(tab===4){
-/* Vol regime */
-if(volNow<10)ins.push({t:"Daily volatility at "+"\u20AC"+fmt(volNow)+"/MWh (7d avg) \u2014 <b>low volatility regime</b>. Limited intraday price swings reduce arbitrage opportunity.",c:"bear"});
-else if(volNow<25)ins.push({t:"Daily volatility at "+"\u20AC"+fmt(volNow)+"/MWh (7d avg) \u2014 <b>moderate volatility</b>, supporting reasonable BESS arbitrage.",c:"neut"});
-else if(volNow<50)ins.push({t:"Daily volatility at "+"\u20AC"+fmt(volNow)+"/MWh (7d avg) \u2014 <b>elevated volatility</b> creating attractive spread opportunity for flexible assets.",c:"bull"});
-else ins.push({t:"Daily volatility at "+"\u20AC"+fmt(volNow)+"/MWh (7d avg) \u2014 <b>extreme volatility</b>. Investigate fuel price spikes, weather events, or outages driving wild price swings.",c:"warn"});
-/* Vol trend */
+if(volNow<10)ins.push({t:"Daily volatility at \u20AC"+fmt(volNow)+"/MWh \u2014 <b>low volatility regime</b>.",c:"bear"});
+else if(volNow<25)ins.push({t:"Daily volatility at \u20AC"+fmt(volNow)+"/MWh \u2014 <b>moderate volatility</b>.",c:"neut"});
+else if(volNow<50)ins.push({t:"Daily volatility at \u20AC"+fmt(volNow)+"/MWh \u2014 <b>elevated volatility</b>.",c:"bull"});
+else ins.push({t:"Daily volatility at \u20AC"+fmt(volNow)+"/MWh \u2014 <b>extreme volatility</b>.",c:"warn"});
 if(volPct!==null){
-if(volPct>20)ins.push({t:"Volatility trending <b>sharply higher</b> ("+fmtPct(volPct)+" WoW) \u2014 widening intraday swings signal growing flexibility value.",c:"bull"});
-else if(volPct<-20)ins.push({t:"Volatility <b>compressing</b> ("+fmtPct(volPct)+" WoW) \u2014 flatter daily profiles may indicate increased baseload/storage smoothing.",c:"bear"});
-}
-/* Neg pricing */
+if(volPct>20)ins.push({t:"Volatility trending <b>sharply higher</b> ("+fmtPct(volPct)+" WoW).",c:"bull"});
+else if(volPct<-20)ins.push({t:"Volatility <b>compressing</b> ("+fmtPct(volPct)+" WoW).",c:"bear"});}
 var totalNeg=0;for(var i=0;i<n;i++)totalNeg+=ds[i].negHours;
 var daysWithNeg=0;for(var i=0;i<n;i++)if(ds[i].negHours>0)daysWithNeg++;
 var pctNeg=Math.round(daysWithNeg/n*100);
-if(pctNeg>40)ins.push({t:"<b>"+pctNeg+"% of days</b> experienced negative prices \u2014 structural oversupply a regular feature. BESS benefits from charging at negative prices; unhedged generators face revenue erosion.",c:"warn"});
-else if(pctNeg>15)ins.push({t:pctNeg+"% of days had negative price hours \u2014 notable but not pervasive.",c:"neut"});
-else if(pctNeg>0)ins.push({t:"Negative pricing on "+pctNeg+"% of days \u2014 relatively uncommon, limited oversupply events.",c:"neut"});
-else ins.push({t:"No negative pricing observed in this period \u2014 supply-demand balanced throughout.",c:"bull"});
-/* Neg trend */
+if(pctNeg>40)ins.push({t:"<b>"+pctNeg+"% of days</b> experienced negative prices.",c:"warn"});
+else if(pctNeg>15)ins.push({t:pctNeg+"% of days had negative price hours.",c:"neut"});
+else if(pctNeg>0)ins.push({t:"Negative pricing on "+pctNeg+"% of days \u2014 relatively uncommon.",c:"neut"});
+else ins.push({t:"No negative pricing observed in this period.",c:"bull"});
 if(negPct!==null&&negNow>0.1){
-if(negPct>30)ins.push({t:"Negative hours <b>increasing</b> ("+fmtPct(negPct)+" WoW) \u2014 worsening oversupply conditions, likely renewable-driven.",c:"warn"});
-else if(negPct<-30)ins.push({t:"Negative hours <b>declining</b> ("+fmtPct(negPct)+" WoW) \u2014 improving market absorption of surplus generation.",c:"bull"});
+if(negPct>30)ins.push({t:"Negative hours <b>increasing</b> ("+fmtPct(negPct)+" WoW).",c:"warn"});
+else if(negPct<-30)ins.push({t:"Negative hours <b>declining</b> ("+fmtPct(negPct)+" WoW).",c:"bull"});}
+var volArr=ds.map(function(d){return d.stdDev});var volMean=aAvg(volArr),volStdD=aStd(volArr);
+var outlierCnt=0;for(var i=Math.max(0,n-w30);i<n;i++)if(ds[i].stdDev>volMean+2*volStdD)outlierCnt++;
+if(outlierCnt>0)ins.push({t:"<b>"+outlierCnt+" extreme volatility day"+(outlierCnt>1?"s":"")+"</b> in the last "+w30+" days.",c:"warn"});
 }
-/* Outlier days */
-var volArr=ds.map(function(d){return d.stdDev});
-var volMean=aAvg(volArr),volStd=aStd(volArr);
-var outlierCnt=0;for(var i=Math.max(0,n-w30);i<n;i++)if(ds[i].stdDev>volMean+2*volStd)outlierCnt++;
-if(outlierCnt>0)ins.push({t:"<b>"+outlierCnt+" extreme volatility day"+(outlierCnt>1?"s":"")+"</b> in the last "+w30+" days (>2"+"\u03C3"+" from mean) \u2014 investigate specific event drivers.",c:"warn"});
-}
-
-/* ---- TAB 5: DAILY PROFILES ---- */
 else if(tab===5){
-/* Profile shape: check duck curve */
-var avgProfile=[];for(var h=0;h<24;h++){var s=0,c=0;for(var i=0;i<n;i++){if(ds[i].hourly[h]!==null){s+=ds[i].hourly[h];c++}}avgProfile.push(c?s/c:0)}
+var avgProfile=[];for(var hh=0;hh<24;hh++){var s=0,c=0;for(var i=0;i<n;i++){if(ds[i].hourly[hh]!==null){s+=ds[i].hourly[hh];c++}}avgProfile.push(c?s/c:0)}
 var morningPeak=Math.max(avgProfile[7],avgProfile[8],avgProfile[9]);
 var middayTrough=Math.min(avgProfile[11],avgProfile[12],avgProfile[13]);
 var eveningPeak=Math.max(avgProfile[17],avgProfile[18],avgProfile[19]);
-var duckDepth=morningPeak-middayTrough;
 var eveningRamp=eveningPeak-middayTrough;
-if(eveningRamp>20)ins.push({t:"Average profile shows a <b>pronounced duck curve</b> with "+"\u20AC"+fmt(eveningRamp)+"/MWh evening ramp \u2014 strong BESS charge-at-midday / discharge-at-evening opportunity.",c:"bull"});
-else if(eveningRamp>10)ins.push({t:"Moderate evening ramp of "+"\u20AC"+fmt(eveningRamp)+"/MWh in the average daily profile.",c:"neut"});
-else ins.push({t:"Relatively <b>flat</b> average daily profile ("+"\u20AC"+fmt(eveningRamp)+"/MWh evening ramp) \u2014 limited intraday shape for time-shifting.",c:"bear"});
-if(duckDepth>15&&middayTrough<morningPeak*0.7)ins.push({t:"Midday trough at "+"\u20AC"+fmt(middayTrough)+"/MWh is <b>"+Math.round((1-middayTrough/morningPeak)*100)+"% below the morning peak</b> \u2014 solar generation visibly depressing midday prices.",c:"neut"});
-/* Variability */
-var peakHourStdDevs=[];for(var h=17;h<20;h++){var vals=[];for(var i=0;i<n;i++)if(ds[i].hourly[h]!==null)vals.push(ds[i].hourly[h]);peakHourStdDevs.push(aStd(vals))}
-var avgPeakStd=aAvg(peakHourStdDevs);
-if(avgPeakStd>30)ins.push({t:"High price variability during peak hours (17-20h, "+"\u03C3"+"="+"\u20AC"+fmt(avgPeakStd)+") \u2014 evening discharge revenue is <b>volatile but with significant upside potential</b>.",c:"warn"});
+if(eveningRamp>20)ins.push({t:"Average profile shows a <b>pronounced duck curve</b> with \u20AC"+fmt(eveningRamp)+"/MWh evening ramp.",c:"bull"});
+else if(eveningRamp>10)ins.push({t:"Moderate evening ramp of \u20AC"+fmt(eveningRamp)+"/MWh.",c:"neut"});
+else ins.push({t:"Relatively <b>flat</b> average daily profile (\u20AC"+fmt(eveningRamp)+"/MWh evening ramp).",c:"bear"});
+var duckDepth=morningPeak-middayTrough;
+if(duckDepth>15&&middayTrough<morningPeak*0.7)ins.push({t:"Midday trough at \u20AC"+fmt(middayTrough)+"/MWh is <b>"+Math.round((1-middayTrough/morningPeak)*100)+"% below morning peak</b>.",c:"neut"});
 }
-
-/* ---- TAB 6: HEATMAP ---- */
 else if(tab===6){
-/* Identify most extreme hours */
-var hourExtremes=[];for(var h=0;h<24;h++){var vals=[];for(var i=0;i<n;i++){if(ds[i].hourly[h]!==null)vals.push(ds[i].hourly[h])}
-hourExtremes.push({h:h,avg:aAvg(vals),min:aMin(vals),max:aMax(vals)})}
+var hourExtremes=[];for(var hh=0;hh<24;hh++){var vals=[];for(var i=0;i<n;i++){if(ds[i].hourly[hh]!==null)vals.push(ds[i].hourly[hh])}
+hourExtremes.push({h:hh,avg:aAvg(vals)})}
 hourExtremes.sort(function(a,b){return b.avg-a.avg});
 var highH=hourExtremes[0],lowH=hourExtremes[23];
-ins.push({t:"<b>Highest average price at "+String(highH.h).padStart(2,"0")+":00</b> ("+"\u20AC"+fmt(highH.avg)+"/MWh) \u2014 optimal BESS discharge window.",c:"bull"});
-ins.push({t:"<b>Lowest average price at "+String(lowH.h).padStart(2,"0")+":00</b> ("+"\u20AC"+fmt(lowH.avg)+"/MWh) \u2014 optimal BESS charge window.",c:"bull"});
-var optSpread=highH.avg-lowH.avg;
-ins.push({t:"Optimal charge/discharge spread of <b>"+"\u20AC"+fmt(optSpread)+"/MWh</b> between hour "+lowH.h+" and hour "+highH.h+".",c:"neut"});
-/* Negative clustering */
-var negByHour=[];for(var h=0;h<24;h++){var cnt=0;for(var i=0;i<n;i++){if(ds[i].hourly[h]!==null&&ds[i].hourly[h]<0)cnt++}negByHour.push({h:h,pct:Math.round(cnt/n*100)})}
-negByHour.sort(function(a,b){return b.pct-a.pct});
-if(negByHour[0].pct>10)ins.push({t:"Negative prices most frequent at <b>"+String(negByHour[0].h).padStart(2,"0")+":00</b> ("+negByHour[0].pct+"% of days) \u2014 consistent oversupply window, ideal for low-cost/negative-cost charging.",c:"neut"});
+ins.push({t:"<b>Highest average price at "+String(highH.h).padStart(2,"0")+":00</b> (\u20AC"+fmt(highH.avg)+"/MWh).",c:"bull"});
+ins.push({t:"<b>Lowest average price at "+String(lowH.h).padStart(2,"0")+":00</b> (\u20AC"+fmt(lowH.avg)+"/MWh).",c:"bull"});
+ins.push({t:"Optimal charge/discharge spread: <b>\u20AC"+fmt(highH.avg-lowH.avg)+"/MWh</b>.",c:"neut"});
 }
-
-/* ---- TAB 7: TB SPREADS ---- */
 else if(tab===7){
 var tb1Now=rAvg("tb1",w7),tb4Now=rAvg("tb4",w7),tb2Now=rAvg("tb2",w7);
 var tb1Prior=pAvg("tb1",w7),tb4Prior=pAvg("tb4",w7);
 var tb1Pct=pctChg(tb1Now,tb1Prior),tb4Pct=pctChg(tb4Now,tb4Prior);
 var tb1Avg=aAvg(ds.map(function(d){return d.tb1}));
-ins.push({t:"TB1 (7d) at <b>"+"\u20AC"+fmt(tb1Now)+"/MWh</b>"+(tb1Pct!==null?" ("+fmtPct(tb1Pct)+" WoW)":"")+" \u2014 "+(tb1Now>tb1Avg*1.2?"above":"below")+" period average of "+"\u20AC"+fmt(tb1Avg)+".",c:tb1Now>tb1Avg*1.2?"bull":tb1Now<tb1Avg*0.8?"bear":"neut"});
-ins.push({t:"TB4 (7d) at <b>"+"\u20AC"+fmt(tb4Now)+"/MWh</b>"+(tb4Pct!==null?" ("+fmtPct(tb4Pct)+" WoW)":"")+" \u2014 4-hour battery benchmark.",c:tb4Pct!==null&&tb4Pct>10?"bull":tb4Pct!==null&&tb4Pct<-10?"bear":"neut"});
-/* TB1 vs TB2 gap = outlier dependence */
+ins.push({t:"TB1 (7d) at <b>\u20AC"+fmt(tb1Now)+"/MWh</b>"+(tb1Pct!==null?" ("+fmtPct(tb1Pct)+" WoW)":"")+".",c:tb1Now>tb1Avg*1.2?"bull":tb1Now<tb1Avg*0.8?"bear":"neut"});
+ins.push({t:"TB4 (7d) at <b>\u20AC"+fmt(tb4Now)+"/MWh</b>"+(tb4Pct!==null?" ("+fmtPct(tb4Pct)+" WoW)":"")+".",c:tb4Pct!==null&&tb4Pct>10?"bull":tb4Pct!==null&&tb4Pct<-10?"bear":"neut"});
 var outlierGap=tb1Now-tb2Now;
 if(tb2Now>0){var gapPct=Math.round(outlierGap/tb1Now*100);
-if(gapPct>40)ins.push({t:"TB1-TB2 gap is <b>"+gapPct+"% of TB1</b> \u2014 revenue heavily dependent on single-hour price outliers. TB2 provides a more conservative achievable estimate.",c:"warn"});
-else if(gapPct<15)ins.push({t:"TB1-TB2 gap is only "+gapPct+"% \u2014 spreads are <b>well-distributed</b> across hours, not reliant on outliers.",c:"bull"});
-}
-/* TB trend */
+if(gapPct>40)ins.push({t:"TB1-TB2 gap is <b>"+gapPct+"% of TB1</b> \u2014 revenue dependent on outlier hours.",c:"warn"});
+else if(gapPct<15)ins.push({t:"TB1-TB2 gap is only "+gapPct+"% \u2014 spreads <b>well-distributed</b>.",c:"bull"});}
 var tb1Trend=trend(A.rollTB1_7,w30);
-if(tb1Trend>15)ins.push({t:"TB1 on a <b>rising trend</b> (+"+tb1Trend.toFixed(1)+"% over 30d) \u2014 expanding single-cycle arbitrage opportunity.",c:"bull"});
-else if(tb1Trend<-15)ins.push({t:"TB1 on a <b>declining trend</b> ("+tb1Trend.toFixed(1)+"% over 30d) \u2014 compressing peak-to-trough spreads.",c:"bear"});
-/* Multi-cycle value */
-if(tb4Now>tb1Now*3)ins.push({t:"TB4 exceeds 3x TB1 \u2014 <b>strong multi-cycle value</b>. Additional BESS cycles within the day capture significant incremental revenue.",c:"bull"});
-else if(tb4Now<tb1Now*2)ins.push({t:"TB4 below 2x TB1 \u2014 limited incremental value from additional cycles. Single-cycle BESS captures most of the daily spread.",c:"neut"});
+if(tb1Trend>15)ins.push({t:"TB1 on a <b>rising trend</b> (+"+tb1Trend.toFixed(1)+"%).",c:"bull"});
+else if(tb1Trend<-15)ins.push({t:"TB1 on a <b>declining trend</b> ("+tb1Trend.toFixed(1)+"%).",c:"bear"});
+if(tb4Now>tb1Now*3)ins.push({t:"TB4 exceeds 3x TB1 \u2014 <b>strong multi-cycle value</b>.",c:"bull"});
+else if(tb4Now<tb1Now*2)ins.push({t:"TB4 below 2x TB1 \u2014 limited incremental value from additional cycles.",c:"neut"});
 }
-
 return ins;
 }
 
@@ -1071,6 +1504,7 @@ html+='</div></div>';
 box.innerHTML=html;
 }
 
+/* ===== MASTER DRAW ===== */
 function draw(){if(!allPrices.length)return;
 if(activeTab===0)drawSummary();else if(activeTab===1)drawBessEcon();
 else if(activeTab===2)drawSpreadDuration();else if(activeTab===3)drawPriceStructure();
@@ -1078,9 +1512,86 @@ else if(activeTab===4)drawVolatility();else if(activeTab===5)drawProfiles();
 else if(activeTab===6)drawHeatmap();else if(activeTab===7)drawTbSpreads();
 renderInsights()}
 
-function showTab(n){activeTab=n;var tabs=document.querySelectorAll(".tab");var panels=document.querySelectorAll(".panel");
-for(var i=0;i<tabs.length;i++){tabs[i].className=i===n?"tab active":"tab";panels[i].className=i===n?"panel active":"panel"}draw()}
+/* ===== SEGMENTED CONTROL ===== */
+function updateSegIndicator(){
+var btns=document.querySelectorAll(".seg-btn");
+var indicator=document.getElementById("segIndicator");
+if(!btns.length||!indicator)return;
+var activeBtn=btns[activeTab];
+if(!activeBtn)return;
+indicator.style.width=activeBtn.offsetWidth+"px";
+indicator.style.transform="translateX("+activeBtn.offsetLeft+"px)";
+}
 
+function showTab(n){
+activeTab=n;
+var btns=document.querySelectorAll(".seg-btn");
+var panels=document.querySelectorAll(".panel");
+for(var i=0;i<btns.length;i++){
+btns[i].className=i===n?"seg-btn active":"seg-btn";
+if(panels[i]){
+panels[i].className=i===n?"panel active":"panel";
+}
+}
+updateSegIndicator();
+draw();
+}
+
+/* ===== EXPORT FUNCTIONS ===== */
+function exportCSV(tab){
+if(!A.daily||!A.daily.length)return;
+var ds=A.daily;var rows=[];var filename="powerprices_"+currentBzn+"_";
+if(tab===0){
+filename+="summary.csv";
+rows.push(["Date","Avg Price","Spread","BESS Rev","Neg Hours","StdDev","Solar Index","Peak/OffPeak"]);
+for(var i=0;i<ds.length;i++){var d=ds[i];
+rows.push([d.date,d.avg.toFixed(2),d.spread.toFixed(2),d.bessRev.toFixed(2),d.negHours.toFixed(2),d.stdDev.toFixed(2),
+(d.avg!==0?d.solarAvg/d.avg:1).toFixed(3),(d.offpeakAvg!==0?d.peakAvg/d.offpeakAvg:1).toFixed(3)])}
+}else if(tab===1){
+filename+="bess_economics.csv";
+rows.push(["Date","Spread","BESS Revenue","Min","Max","Avg","Neg Hours"]);
+for(var i=0;i<ds.length;i++){var d=ds[i];
+rows.push([d.date,d.spread.toFixed(2),d.bessRev.toFixed(2),d.min.toFixed(2),d.max.toFixed(2),d.avg.toFixed(2),d.negHours.toFixed(2)])}
+}else if(tab===2){
+filename+="spread_duration.csv";
+var spreads=ds.map(function(d){return d.spread}).sort(function(a,b){return b-a});
+rows.push(["Rank","Percentile","Spread"]);
+for(var i=0;i<spreads.length;i++){rows.push([i+1,(i/spreads.length*100).toFixed(1),spreads[i].toFixed(2)])}
+}else if(tab===3){
+filename+="price_structure.csv";
+rows.push(["Date","Avg Price","Peak Avg","Off-Peak Avg","Solar Avg"]);
+for(var i=0;i<ds.length;i++){var d=ds[i];
+rows.push([d.date,d.avg.toFixed(2),d.peakAvg.toFixed(2),d.offpeakAvg.toFixed(2),d.solarAvg.toFixed(2)])}
+}else if(tab===4){
+filename+="volatility.csv";
+rows.push(["Date","StdDev","Neg Hours","Avg Depth"]);
+for(var i=0;i<ds.length;i++){var d=ds[i];
+rows.push([d.date,d.stdDev.toFixed(2),d.negHours.toFixed(2),d.negAvgDepth.toFixed(2)])}
+}else if(tab===7){
+filename+="tb_spreads.csv";
+rows.push(["Date","TB1","TB2","TB4","DA Avg","High","Low"]);
+for(var i=0;i<ds.length;i++){var d=ds[i];
+rows.push([d.date,d.tb1.toFixed(2),d.tb2.toFixed(2),d.tb4.toFixed(2),d.avg.toFixed(2),d.max.toFixed(2),d.min.toFixed(2)])}
+}else return;
+var csv=rows.map(function(r){return r.join(",")}).join("\n");
+var blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+var url=URL.createObjectURL(blob);
+var a=document.createElement("a");a.href=url;a.download=filename;
+document.body.appendChild(a);a.click();document.body.removeChild(a);
+URL.revokeObjectURL(url);
+}
+
+function exportPNG(tab){
+var canvasIds={0:"c0",1:"c1",2:"c2",3:"c3",4:"c4",5:"c5",6:"c6",7:"c7a"};
+var id=canvasIds[tab];if(!id)return;
+var canvas=document.getElementById(id);if(!canvas)return;
+var url=canvas.toDataURL("image/png");
+var a=document.createElement("a");a.href=url;
+a.download="powerprices_"+currentBzn+"_tab"+tab+".png";
+document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+/* ===== SLIDER & PROFILE CONTROLS ===== */
 function setHlOffset(n){var d=new Date();d.setDate(d.getDate()-n);
 var ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 document.getElementById("hlDate").value=ds;syncSliderToDate();draw()}
@@ -1098,9 +1609,15 @@ else{for(var i=0;i<dayKeys.length;i++){if(dayKeys[i]>=hlDate){slider.value=i;ret
 function onSliderChange(){var slider=document.getElementById("hlSlider");var idx=parseInt(slider.value);
 if(dayKeys[idx]){document.getElementById("hlDate").value=dayKeys[idx];draw()}}
 
-function setStatus(msg){document.getElementById("status").textContent=msg}
+/* ===== STATUS & LOADING ===== */
+function setStatus(msg){
+document.getElementById("status").textContent=msg;
+var loader=document.getElementById("loader");
+if(msg.indexOf("Fetching")>=0||msg.indexOf("Loading")>=0){loader.className="loader active"}
+else{loader.className="loader"}
+}
 
-/* === Fetch engine: race proxies, cache, chunk large ranges, abort === */
+/* ===== FETCH ENGINE (preserved exactly) ===== */
 var fetchCache={};
 var activeAbort=null;
 var preferredProxy=null;
@@ -1151,7 +1668,7 @@ if(idx!==undefined)sortedP[idx]=ch.price[i]}}
 return{unix_seconds:allU,price:sortedP}}
 
 function dateChunks(sd,ed,maxDaysPerChunk){
-var chunks=[];var s=new Date(sd+"T00:00:00Z");var e=new Date(ed+"T00:00:00Z");
+var chunks=[];var s=new Date(sd+"T00:00:00Z");var e=new Date(ed+"T00:00:00U");
 while(s<e){var ce=new Date(s);ce.setUTCDate(ce.getUTCDate()+maxDaysPerChunk);
 if(ce>e)ce=e;
 chunks.push({start:s.toISOString().slice(0,10),end:ce.toISOString().slice(0,10)});
@@ -1172,12 +1689,12 @@ var s=new Date(sd),e=new Date(ed);
 var totalDays=Math.round((e-s)/86400000);
 if(totalDays>90){
 var chunks=dateChunks(sd,ed,90);
-setStatus("Fetching "+currentBzn+" — "+chunks.length+" chunks from API...");
+setStatus("Fetching "+currentBzn+" \u2014 "+chunks.length+" chunks from API...");
 var promises=chunks.map(function(ch,idx){
 var u="https://api.energy-charts.info/price?bzn="+currentBzn+"&start="+ch.start+"&end="+ch.end;
 return raceFetch(u,ac.signal).then(function(d){
 if(!d.unix_seconds||!d.price)throw new Error("Invalid chunk "+idx);
-setStatus("Fetching "+currentBzn+" — chunk "+(idx+1)+"/"+chunks.length+" done...");
+setStatus("Fetching "+currentBzn+" \u2014 chunk "+(idx+1)+"/"+chunks.length+" done...");
 return d})});
 return Promise.all(promises).then(function(results){return mergeChunks(results)})}
 else{
@@ -1193,8 +1710,6 @@ if(activeAbort){activeAbort.abort();activeAbort=null}
 var ac=new AbortController();activeAbort=ac;
 var ck=cacheKey(currentBzn,sd,ed);
 if(fetchCache[ck]){setStatus("Loading from cache...");processData(fetchCache[ck]);return}
-
-/* Try local data file first */
 var bzn=currentBzn;
 var localPath="data/"+bzn+".json";
 var localPromise=localDataCache[bzn]?Promise.resolve(localDataCache[bzn]):
@@ -1209,8 +1724,6 @@ var lastLocalTs=localData.unix_seconds[localData.unix_seconds.length-1];
 var lastLocalDate=dateStr(lastLocalTs);
 var requestedEnd=ed;
 var today=new Date().toISOString().slice(0,10);
-
-/* Check if we need fresh data beyond what's stored locally */
 if(lastLocalDate<today&&lastLocalDate<requestedEnd){
 var gapStart=lastLocalDate;
 setStatus("Local data loaded (to "+lastLocalDate+"), fetching recent from API...");
@@ -1220,7 +1733,6 @@ var merged=sliced?mergeChunks([sliced,apiData]):apiData;
 fetchCache[ck]=merged;processData(merged);
 }).catch(function(e){
 if(ac.signal.aborted)return;
-/* API failed but we have local data — use what we have */
 if(sliced){setStatus("API unavailable, using local data (up to "+lastLocalDate+")");
 fetchCache[ck]=sliced;processData(sliced)}
 else setStatus("No data available for this range")})}
@@ -1228,13 +1740,11 @@ else if(sliced){
 setStatus("Loading from local data...");
 fetchCache[ck]=sliced;processData(sliced)}
 else{
-/* Local file exists but doesn't cover this range — try API */
 fetchFromAPI(sd,ed,ac).then(function(d){
 if(ac.signal.aborted)return;fetchCache[ck]=d;processData(d);
 }).catch(function(e){if(!ac.signal.aborted)setStatus("Fetch failed: "+e.message)})}
 
 }).catch(function(){
-/* No local file — fall back to full API fetch */
 if(ac.signal.aborted)return;
 fetchFromAPI(sd,ed,ac).then(function(d){
 if(ac.signal.aborted)return;fetchCache[ck]=d;processData(d);
@@ -1260,10 +1770,10 @@ else{var s=new Date();s.setDate(s.getDate()-currentRange);var sd=s.toISOString()
 function loadRange(n){currentRange=n;var e=new Date();e.setDate(e.getDate()+1);var s=new Date();s.setDate(s.getDate()-n);
 var sd=s.toISOString().slice(0,10),ed=e.toISOString().slice(0,10);
 syncDateInputs(sd,ed);
-if(n>365){setStatus("Loading "+Math.round(n/365)+"+ years of data — this may take a moment...")}
+if(n>365){setStatus("Loading "+Math.round(n/365)+"+ years of data \u2014 this may take a moment...")}
 fetchAPI(sd,ed)}
 
-function loadMaxRange(){currentRange=0;setStatus("Loading all available data back to 2011 — this may take a moment...");
+function loadMaxRange(){currentRange=0;setStatus("Loading all available data back to 2011 \u2014 this may take a moment...");
 var e=new Date();e.setDate(e.getDate()+1);var ed=e.toISOString().slice(0,10);
 syncDateInputs("2011-01-01",ed);fetchAPI("2011-01-01",ed)}
 
@@ -1278,8 +1788,11 @@ syncDateInputs(sd,ed);fetchAPI(sd,ed)}
 
 function switchMarket(){currentBzn=document.getElementById("mktSel").value;doRefresh()}
 
+/* ===== INIT ===== */
 document.getElementById("hlDate").addEventListener("change",function(){syncSliderToDate();draw()});
-window.addEventListener("resize",function(){draw()});
+window.addEventListener("resize",function(){updateSegIndicator();draw()});
+requestAnimationFrame(function(){updateSegIndicator()});
 loadRange(90);
 </script>
-</body></html>
+</body>
+</html>

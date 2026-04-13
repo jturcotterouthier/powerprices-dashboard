@@ -606,6 +606,7 @@ tr:hover td { background: rgba(74,108,247,0.05); }
   <button onclick="loadCustomRange()">Go</button>
   <span class="sep">|</span>
   <button id="yoyBtn" onclick="toggleYoY()" title="Overlay prior year for seasonal comparison">YoY</button>
+  <button id="gasBtn" onclick="toggleGas()" title="Overlay TTF natural gas front-month price">Gas</button>
 </div>
 
 <div id="status"></div>
@@ -764,6 +765,7 @@ var days={},dayKeys=[],activeTab=0,currentBzn="DE-LU";
 var A={};
 var RTE=0.88;
 var yoyEnabled=false,yoyA={},yoyDayKeys=[],yoyAbort=null;
+var gasEnabled=false,gasData=null,gasDayMap={};
 
 /* ===== UTILITY FUNCTIONS ===== */
 function aMax(a){var m=-Infinity;for(var i=0;i<a.length;i++)if(a[i]!==null&&a[i]>m)m=a[i];return m===-Infinity?0:m}
@@ -913,6 +915,48 @@ var n1=ds.length,n2=yds.length;if(n1<w||n2<w)return null;
 var cur=0;for(var i=n1-w;i<n1;i++)cur+=ds[i][field];cur/=w;
 var prior=0;for(var i=n2-w;i<n2;i++)prior+=yds[i][field];prior/=w;
 if(Math.abs(prior)<0.01)return null;return(cur-prior)/Math.abs(prior)*100}
+
+/* ===== GAS OVERLAY ===== */
+function toggleGas(){
+gasEnabled=!gasEnabled;
+var btn=document.getElementById('gasBtn');
+btn.className=gasEnabled?'active':'';
+if(gasEnabled){loadGasData()}else{draw()}}
+
+function loadGasData(){
+if(gasData){buildGasDayMap();draw();return}
+setStatus('Loading TTF gas data...');
+fetch('data/TTF.json').then(function(r){
+if(!r.ok)throw new Error('No TTF data file');return r.json()}).then(function(d){
+if(!d.unix_seconds||!d.price)throw new Error('Invalid TTF data');
+gasData=d;buildGasDayMap();
+setStatus(document.getElementById('status').textContent+' | TTF gas loaded');
+draw()}).catch(function(e){
+setStatus('Gas data unavailable: '+e.message);
+gasEnabled=false;document.getElementById('gasBtn').className=''})}
+
+function buildGasDayMap(){
+gasDayMap={};if(!gasData)return;
+for(var i=0;i<gasData.unix_seconds.length;i++){
+var dk=dateStr(gasData.unix_seconds[i]);
+gasDayMap[dk]=gasData.price[i]}}
+
+function getGasForDays(dks){
+var vals=[];for(var i=0;i<dks.length;i++){
+var v=gasDayMap[dks[i]];
+if(v!==undefined){vals.push(v)}else{vals.push(vals.length>0?vals[vals.length-1]:null)}}
+return vals}
+
+function drawGasLine(ctx,gasVals,nTotal,pW,padL,topY,plotH,yMin,yMax){
+if(!gasEnabled||!gasVals||!gasVals.length)return;
+ctx.save();ctx.strokeStyle='#f97316';ctx.lineWidth=2;ctx.globalAlpha=0.85;
+ctx.beginPath();var started=false;
+for(var i=0;i<gasVals.length;i++){
+if(gasVals[i]===null)continue;
+var x=padL+(i+0.5)/nTotal*pW;
+var y=topY+(1-(gasVals[i]-yMin)/(yMax-yMin))*plotH;
+if(!started){ctx.moveTo(x,y);started=true}else{ctx.lineTo(x,y)}}
+ctx.stroke();ctx.restore()}
 
 function drawYoYDash(ctx,arr,nTotal,pW,padL,topY,plotH,yMin,yMax,color){
 if(!yoyEnabled||!arr||!arr.length)return;
@@ -1151,6 +1195,8 @@ var topH=h*0.55;var pad={t:20,r:20,b:5,l:50};var pW=w-pad.l-pad.r;
 var dailyAvgs=ds.map(function(d){return d.avg});
 var allVals=dailyAvgs.concat(A.rollPrice7).concat(A.rollPrice30);
 if(yoyEnabled&&yoyA.rollPrice7)allVals=allVals.concat(yoyA.rollPrice7);
+var gasVals=gasEnabled?getGasForDays(dayKeys):null;
+if(gasVals){var gvF=gasVals.filter(function(v){return v!==null});if(gvF.length)allVals=allVals.concat(gvF)}
 var yMin=aMin(allVals)*0.95;var yMax=aMax(allVals)*1.05;if(yMin>0)yMin=0;
 ctx.fillStyle="#888";ctx.font="9px Inter,sans-serif";ctx.textAlign="left";
 ctx.fillText("Daily Average Price & Moving Averages (\u20AC/MWh)",pad.l,pad.t-4);
@@ -1174,6 +1220,9 @@ ctx.fillStyle="#eab308";ctx.fillText("\u25CF 7d MA",w-pad.r,pad.t+8);
 ctx.fillStyle="rgba(255,255,255,0.5)";ctx.fillText("\u25CF 30d MA",w-pad.r,pad.t+18);
 ctx.fillStyle="rgba(74,108,247,0.6)";ctx.fillText("\u25CF Daily",w-pad.r,pad.t+28);
 if(yoyEnabled&&yoyA.rollPrice7&&yoyA.rollPrice7.length){ctx.fillStyle="#888";ctx.fillText("- - PY 7d MA",w-pad.r,pad.t+38)}
+if(gasVals){drawGasLine(ctx,gasVals,n,pW,pad.l,pad.t,topH-pad.t-pad.b,yMin,yMax);
+var legendY=pad.t+(yoyEnabled&&yoyA.rollPrice7&&yoyA.rollPrice7.length?48:38);
+ctx.fillStyle="#f97316";ctx.fillText("\u25CF TTF Gas",w-pad.r,legendY)}
 
 var botY=topH+35;var botH=h-botY-30;
 var peaks=ds.map(function(d){return d.peakAvg});

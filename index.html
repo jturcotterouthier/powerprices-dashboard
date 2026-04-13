@@ -607,6 +607,7 @@ tr:hover td { background: rgba(74,108,247,0.05); }
   <span class="sep">|</span>
   <button id="yoyBtn" onclick="toggleYoY()" title="Overlay prior year for seasonal comparison">YoY</button>
   <button id="gasBtn" onclick="toggleGas()" title="Overlay TTF natural gas front-month price">Gas</button>
+  <button id="storageBtn" onclick="toggleStorage()" title="Overlay EU gas storage fill level (%)">Storage</button>
 </div>
 
 <div id="status"></div>
@@ -766,6 +767,7 @@ var A={};
 var RTE=0.88;
 var yoyEnabled=false,yoyA={},yoyDayKeys=[],yoyAbort=null;
 var gasEnabled=false,gasData=null,gasDayMap={};
+var storageEnabled=false,storageData=null,storageDayMap={};
 
 /* ===== UTILITY FUNCTIONS ===== */
 function aMax(a){var m=-Infinity;for(var i=0;i<a.length;i++)if(a[i]!==null&&a[i]>m)m=a[i];return m===-Infinity?0:m}
@@ -957,6 +959,55 @@ var x=padL+(i+0.5)/nTotal*pW;
 var y=topY+(1-(gasVals[i]-yMin)/(yMax-yMin))*plotH;
 if(!started){ctx.moveTo(x,y);started=true}else{ctx.lineTo(x,y)}}
 ctx.stroke();ctx.restore()}
+
+function toggleStorage(){
+storageEnabled=!storageEnabled;
+var btn=document.getElementById('storageBtn');
+btn.className=storageEnabled?'active':'';
+if(storageEnabled){loadStorageData()}else{draw()}}
+
+function loadStorageData(){
+if(storageData){buildStorageDayMap();draw();return}
+setStatus('Loading EU storage data...');
+fetch('data/EU-Storage.json').then(function(r){
+if(!r.ok)throw new Error('No EU-Storage data file');return r.json()}).then(function(d){
+if(!d.unix_seconds||!d.fill_pct)throw new Error('Invalid storage data');
+storageData=d;buildStorageDayMap();
+setStatus(document.getElementById('status').textContent+' | EU storage loaded');
+draw()}).catch(function(e){
+setStatus('Storage data unavailable: '+e.message);
+storageEnabled=false;document.getElementById('storageBtn').className=''})}
+
+function buildStorageDayMap(){
+storageDayMap={};if(!storageData)return;
+for(var i=0;i<storageData.unix_seconds.length;i++){
+var dk=dateStr(storageData.unix_seconds[i]);
+storageDayMap[dk]=storageData.fill_pct[i]}}
+
+function getStorageForDays(dks){
+var vals=[];for(var i=0;i<dks.length;i++){
+var v=storageDayMap[dks[i]];
+if(v!==undefined){vals.push(v)}else{vals.push(vals.length>0?vals[vals.length-1]:null)}}
+return vals}
+
+function drawStorageLine(ctx,storageVals,nTotal,pW,padL,padR,topY,plotH,w){
+if(!storageEnabled||!storageVals||!storageVals.length)return;
+var sMin=0,sMax=100;
+ctx.save();ctx.strokeStyle='#06b6d4';ctx.lineWidth=2;ctx.globalAlpha=0.85;
+ctx.beginPath();var started=false;
+for(var i=0;i<storageVals.length;i++){
+if(storageVals[i]===null)continue;
+var x=padL+(i+0.5)/nTotal*pW;
+var y=topY+(1-(storageVals[i]-sMin)/(sMax-sMin))*plotH;
+if(!started){ctx.moveTo(x,y);started=true}else{ctx.lineTo(x,y)}}
+ctx.stroke();ctx.restore();
+/* draw right y-axis for 0-100% */
+ctx.save();ctx.fillStyle='#06b6d4';ctx.font='9px Inter,sans-serif';ctx.textAlign='left';
+var axisX=w-padR+4;
+for(var i=0;i<=4;i++){var pct=100-i*25;
+var y=topY+(1-(pct-sMin)/(sMax-sMin))*plotH;
+ctx.fillText(pct+'%',axisX,y+3)}
+ctx.restore()}
 
 function drawYoYDash(ctx,arr,nTotal,pW,padL,topY,plotH,yMin,yMax,color){
 if(!yoyEnabled||!arr||!arr.length)return;
@@ -1191,7 +1242,7 @@ ss.innerHTML=Math.round(pa100/n*100)+"% of days have spread \u2265 \u20AC100 | "
 function drawPriceStructure(){
 if(!A.daily||!A.daily.length)return;
 var ds=A.daily,n=ds.length;var r=clearCanvas("c3",420);var ctx=r.ctx,w=r.w,h=r.h;
-var topH=h*0.55;var pad={t:20,r:20,b:5,l:50};var pW=w-pad.l-pad.r;
+var topH=h*0.55;var padR=storageEnabled?50:20;var pad={t:20,r:padR,b:5,l:50};var pW=w-pad.l-pad.r;
 var dailyAvgs=ds.map(function(d){return d.avg});
 var allVals=dailyAvgs.concat(A.rollPrice7).concat(A.rollPrice30);
 if(yoyEnabled&&yoyA.rollPrice7)allVals=allVals.concat(yoyA.rollPrice7);
@@ -1223,6 +1274,12 @@ if(yoyEnabled&&yoyA.rollPrice7&&yoyA.rollPrice7.length){ctx.fillStyle="#888";ctx
 if(gasVals){drawGasLine(ctx,gasVals,n,pW,pad.l,pad.t,topH-pad.t-pad.b,yMin,yMax);
 var legendY=pad.t+(yoyEnabled&&yoyA.rollPrice7&&yoyA.rollPrice7.length?48:38);
 ctx.fillStyle="#f97316";ctx.fillText("\u25CF TTF Gas",w-pad.r,legendY)}
+var storageVals=storageEnabled?getStorageForDays(dayKeys):null;
+if(storageVals){drawStorageLine(ctx,storageVals,n,pW,pad.l,pad.r,pad.t,topH-pad.t-pad.b,w);
+var sLegY=pad.t+8;if(yoyEnabled&&yoyA.rollPrice7&&yoyA.rollPrice7.length)sLegY+=40;else sLegY+=28;
+if(gasVals)sLegY+=10;
+ctx.font="8px Inter,sans-serif";ctx.textAlign="right";
+ctx.fillStyle="#06b6d4";ctx.fillText("\u25CF EU Storage %",w-pad.r,sLegY)}
 
 var botY=topH+35;var botH=h-botY-30;
 var peaks=ds.map(function(d){return d.peakAvg});
